@@ -13,8 +13,8 @@
     <!-- Imagen de la planta en el centro -->
     <ImageView
         android:id="@+id/ivPlant"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="400dp"
+        android:layout_height="300dp"
         android:src="@drawable/ic_planta"
         android:contentDescription="Icono de la planta"
         app:layout_constraintBottom_toBottomOf="parent"
