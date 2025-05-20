@@ -62,36 +62,10 @@ class MainActivity : AppCompatActivity() {
 
         // Botón de Registro
         buttonRegistro.setOnClickListener {
-            val username = editTextUsername.text.toString().trim()
-            val password = editTextPassword.text.toString().trim()
-
-            if (!Patterns.EMAIL_ADDRESS.matcher(username).matches()) {
-                Toast.makeText(this, "Ingresa un correo válido", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            if (password.length < 6) {
-                Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            firebaseAuth.createUserWithEmailAndPassword(username, password)
-                .addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        Toast.makeText(this, "Registro exitoso", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Error al registrar usuario", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .addOnFailureListener { exception ->
-                    when (exception) {
-                        is FirebaseAuthUserCollisionException ->
-                            Toast.makeText(this, "El correo ya está registrado", Toast.LENGTH_SHORT).show()
-                        is FirebaseAuthInvalidCredentialsException ->
-                            Toast.makeText(this, "Correo inválido", Toast.LENGTH_SHORT).show()
-                    }
-                }
+            val intent = Intent(this, RegisterActivity::class.java)
+            startActivity(intent)
         }
+
 
         // Botón Corregir
         buttonCorrection.setOnClickListener {

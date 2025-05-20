@@ -7,8 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/white"
     android:padding="24dp"
-    tools:context=".MainActivity">
-
+    tools:context=".RegisterActivity">
 
     <!-- Título -->
     <TextView
@@ -16,7 +15,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="80dp"
-        android:text="Inicio de Sesión"
+        android:text="Registro"
         android:textColor="@color/dark_text"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -25,7 +24,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Campo Usuario (Correo) con icono y bordes redondos -->
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/emailInputLayout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -45,7 +44,7 @@
         app:layout_constraintTop_toBottomOf="@id/textViewTitle">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextUsername"
+            android:id="@+id/editTextEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Correo electrónico"
@@ -54,7 +53,7 @@
             android:textColorHint="@color/hint_color"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-
+    <!-- Campo Contraseña -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/passwordInputLayout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -83,62 +82,64 @@
             android:textColorHint="@color/hint_color"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Botones (se mantienen igual) -->
+    <!-- Campo Confirmar Contraseña -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/confirmPasswordInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:boxStrokeColor="@color/GREEN"
+        app:startIconDrawable="@drawable/ic_key"
+        app:startIconTint="@color/GREEN"
+        app:hintEnabled="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/passwordInputLayout">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Confirmar contraseña"
+            android:inputType="textPassword"
+            android:textColor="@color/dark_text"
+            android:textColorHint="@color/hint_color"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Botón de Registro -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonLogin"
+        android:id="@+id/buttonRegister"
         style="@style/Widget.MaterialComponents.Button"
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:layout_marginTop="32dp"
         android:backgroundTint="@color/GREEN"
-        android:text="Iniciar sesión"
+        android:text="Registrarse"
         android:textColor="@color/white"
         android:textAllCaps="false"
         android:textSize="16sp"
         app:cornerRadius="8dp"
-        app:layout_constraintEnd_toStartOf="@id/buttonCorrection"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/passwordInputLayout" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonCorrection"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="8dp"
-        android:text="Corregir"
-        android:textColor="@color/GREEN"
-        android:textAllCaps="false"
-        android:textSize="16sp"
-        app:cornerRadius="8dp"
-        app:strokeColor="@color/GREEN"
-        app:strokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/buttonLogin"
-        app:layout_constraintTop_toTopOf="@id/buttonLogin" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/confirmPasswordInputLayout" />
 
+    <!-- Botón para volver al login -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonRegistro"
+        android:id="@+id/buttonBackToLogin"
         style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="¿No tienes cuenta? Regístrate"
+        android:text="¿Ya tienes cuenta? Inicia sesión"
         android:textColor="@color/GREEN"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/buttonLogin" />
-
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="203dp"
-        android:layout_height="203dp"
-        app:srcCompat="@drawable/ic_fondo"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/buttonRegistro"
-        android:layout_marginTop="32dp" />
+        app:layout_constraintTop_toBottomOf="@id/buttonRegister" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
