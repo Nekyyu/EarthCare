@@ -6,10 +6,6 @@
     android:padding="16dp"
     android:background="@color/green">
 
-
-
-
-
     <!-- Imagen de la planta en el centro -->
     <ImageView
         android:id="@+id/ivPlant"
@@ -114,5 +110,16 @@
             android:text="0%"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <!-- Botón en la parte inferior derecha -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabChangePlant"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_change_plant"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:contentDescription="Cambiar planta" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

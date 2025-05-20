@@ -29,6 +29,6 @@
     <color name="hint_color">#757575</color>
 
 
-    <color name="error_color">#B00020</color>
+    <color name="red">#B00020</color>
 
 </resources>
