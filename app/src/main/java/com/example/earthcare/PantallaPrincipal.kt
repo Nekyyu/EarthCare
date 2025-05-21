@@ -67,6 +67,19 @@ class PantallaPrincipal : AppCompatActivity() {
 
         // Cargar datos de la planta actual
         loadCurrentPlantData()
+
+        // Set up click listeners for icons
+        findViewById<ImageView>(R.id.imageViewIconLuz).setOnClickListener {
+            startActivity(Intent(this, LuzActivity::class.java))
+        }
+
+        findViewById<ImageView>(R.id.imageViewIconTemperatura).setOnClickListener {
+            startActivity(Intent(this, TemperaturaActivity::class.java))
+        }
+
+        findViewById<ImageView>(R.id.imageViewIconHumedad).setOnClickListener {
+            startActivity(Intent(this, HumedadActivity::class.java))
+        }
     }
 
     private fun showPlantSelectionDialog() {

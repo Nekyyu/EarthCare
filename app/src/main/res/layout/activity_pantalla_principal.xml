@@ -29,6 +29,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
+            android:id="@+id/imageViewIconLuz"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_luz"
@@ -60,6 +61,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
+            android:id="@+id/imageViewIconTemperatura"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_temperatura"
@@ -91,6 +93,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
+            android:id="@+id/imageViewIconHumedad"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_humedad"

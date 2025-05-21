@@ -30,6 +30,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".LuzActivity" android:exported="false"/>
+        <activity android:name=".TemperaturaActivity" android:exported="false"/>
+        <activity android:name=".HumedadActivity" android:exported="false"/>
     </application>
 
 </manifest>
