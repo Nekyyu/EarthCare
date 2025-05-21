@@ -1,6 +1,7 @@
 package com.example.earthcare
 
 import android.app.Dialog
+import android.content.Intent
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -22,6 +23,7 @@ class PantallaPrincipal : AppCompatActivity() {
     private lateinit var sharedPref: SharedPreferences
     private lateinit var defaultPlantList: List<Plant>
     private lateinit var customPlantList: MutableList<Plant>
+
     private val gson = Gson()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +31,12 @@ class PantallaPrincipal : AppCompatActivity() {
         setContentView(R.layout.activity_pantalla_principal)
 
         sharedPref = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val button = findViewById<ImageButton>(R.id.PlantaGPT)
+
+        button.setOnClickListener {
+            startActivity(Intent(this, PlantaGPT::class.java))
+        }
+
 
         // Inicializar listas de plantas
         defaultPlantList = listOf(

@@ -1,3 +1,6 @@
+package com.example.earthcare
+
+
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -30,6 +33,7 @@ class PlantaGPT : AppCompatActivity() {
         sendButton = findViewById(R.id.sendButton)
         responseText = findViewById(R.id.responseText)
 
+
         sendButton.setOnClickListener {
             val prompt = userInput.text.toString()
             sendMessageToAzure(prompt)
@@ -37,13 +41,22 @@ class PlantaGPT : AppCompatActivity() {
     }
 
     private fun sendMessageToAzure(prompt: String) {
-        val messageObj = JSONObject()
-        messageObj.put("role", "user")
-        messageObj.put("content", prompt)
+        // Mensaje de contexto ("system") como en el Playground
+        val systemMessage = JSONObject()
+        systemMessage.put("role", "system")
+        systemMessage.put("content", "Eres un experto en cuidado de plantas. Responde de manera clara y breve.")
 
+        // Mensaje del usuario
+        val userMessage = JSONObject()
+        userMessage.put("role", "user")
+        userMessage.put("content", prompt)
+
+        // Crear array con ambos mensajes
         val messagesArray = JSONArray()
-        messagesArray.put(messageObj)
+        messagesArray.put(systemMessage)
+        messagesArray.put(userMessage)
 
+        // Crear el objeto final JSON
         val json = JSONObject()
         json.put("messages", messagesArray)
         json.put("temperature", 0.7)
@@ -82,4 +95,5 @@ class PlantaGPT : AppCompatActivity() {
             }
         })
     }
+
 }

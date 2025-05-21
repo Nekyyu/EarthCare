@@ -121,5 +121,11 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:contentDescription="Cambiar planta" />
+    <ImageButton
+        android:id="@+id/PlantaGPT"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:layout_constraintEnd_toStartOf="@id/fabChangePlant"
+        app:layout_constraintBottom_toBottomOf="@id/fabChangePlant"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -46,6 +46,9 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth:23.2.0")
     implementation ("com.google.android.material:material:1.11.0")
+    implementation ("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
