@@ -17,6 +17,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.google.firebase.database.*
 
 class PantallaPrincipal : AppCompatActivity() {
 
@@ -26,6 +27,16 @@ class PantallaPrincipal : AppCompatActivity() {
 
     private val gson = Gson()
 
+    private lateinit var imageViewIconLuz: ImageView
+    private lateinit var imageViewIconTemperatura: ImageView
+    private lateinit var imageViewIconHumedad: ImageView
+    private lateinit var textViewUltimoDatoLuz: TextView
+    private lateinit var textViewUltimoDatoTemperatura: TextView
+    private lateinit var textViewUltimoDatoHumedad: TextView
+
+    private lateinit var database: FirebaseDatabase
+    private lateinit var testRef: DatabaseReference
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pantalla_principal)
@@ -33,12 +44,22 @@ class PantallaPrincipal : AppCompatActivity() {
         sharedPref = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val button = findViewById<ImageButton>(R.id.PlantaGPT)
 
+        imageViewIconLuz = findViewById(R.id.imageViewIconLuz)
+        imageViewIconTemperatura = findViewById(R.id.imageViewIconTemperatura)
+        imageViewIconHumedad = findViewById(R.id.imageViewIconHumedad)
+        textViewUltimoDatoLuz = findViewById(R.id.textViewUltimoDatoLuz)
+        textViewUltimoDatoTemperatura = findViewById(R.id.textViewUltimoDatoTemperatura)
+        textViewUltimoDatoHumedad = findViewById(R.id.textViewUltimoDatoHumedad)
+
+        database = FirebaseDatabase.getInstance()
+        testRef = database.getReference("test")
+
         button.setOnClickListener {
             startActivity(Intent(this, PlantaGPT::class.java))
         }
 
 
-        // Inicializar listas de plantas
+        // Inicializar listas de plantas predeterminadas
         defaultPlantList = listOf(
             Plant("Tomate", "22-28°C, 60-70% humedad", R.drawable.ic_tomato, 25, 65, 12000),
             Plant("Lechuga", "15-20°C, 70-80% humedad", R.drawable.ic_lettuce, 18, 75, 8000),
@@ -54,32 +75,35 @@ class PantallaPrincipal : AppCompatActivity() {
             mutableListOf()
         }
 
-        // Verificar si es nuevo usuario
+        // Verificar si es el primer uso de la aplicación
         if (sharedPref.getBoolean("isNewUser", true)) {
             showPlantSelectionDialog()
             sharedPref.edit().putBoolean("isNewUser", false).apply()
         }
 
-        // Configurar botón para cambiar planta
+        // Configurar botón para cambiar la planta
         findViewById<FloatingActionButton>(R.id.fabChangePlant).setOnClickListener {
             showPlantSelectionDialog()
         }
 
-        // Cargar datos de la planta actual
+        // Cargar los datos de la planta actualmente seleccionada
         loadCurrentPlantData()
 
-        // Set up click listeners for icons
-        findViewById<ImageView>(R.id.imageViewIconLuz).setOnClickListener {
+        // Configurar listeners de clic para los iconos
+        imageViewIconLuz.setOnClickListener {
             startActivity(Intent(this, LuzActivity::class.java))
         }
 
-        findViewById<ImageView>(R.id.imageViewIconTemperatura).setOnClickListener {
+        imageViewIconTemperatura.setOnClickListener {
             startActivity(Intent(this, TemperaturaActivity::class.java))
         }
 
-        findViewById<ImageView>(R.id.imageViewIconHumedad).setOnClickListener {
+        imageViewIconHumedad.setOnClickListener {
             startActivity(Intent(this, HumedadActivity::class.java))
         }
+
+        // Actualizar TextViews con los últimos datos del sensor
+        readLastSensorData()
     }
 
     private fun showPlantSelectionDialog() {
@@ -89,7 +113,7 @@ class PantallaPrincipal : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
-        // Combinar listas de plantas
+        // Combinar listas de plantas predeterminadas y personalizadas
         val allPlants = defaultPlantList + customPlantList
 
         dialogBinding.rvPlants.layoutManager = LinearLayoutManager(this)
@@ -154,11 +178,11 @@ class PantallaPrincipal : AppCompatActivity() {
                 idealLight = light
             )
 
-            // Guardar la nueva planta
+            // Guardar la nueva planta personalizada
             customPlantList.add(newPlant)
             saveCustomPlants()
 
-            // Establecer como planta actual
+            // Establecer la nueva planta como la actual
             sharedPref.edit().putString("currentPlant", newPlant.name).apply()
             updatePlantUI(newPlant)
             dialog.dismiss()
@@ -186,9 +210,26 @@ class PantallaPrincipal : AppCompatActivity() {
 
     private fun updatePlantUI(plant: Plant) {
         findViewById<ImageView>(R.id.ivPlant).setImageResource(plant.imageRes)
-        findViewById<TextView>(R.id.tvTemperature).text = "${plant.idealTemp}°C"
-        findViewById<TextView>(R.id.tvHumidity).text = "${plant.idealHumidity}%"
-        findViewById<TextView>(R.id.tvLight).text = "${plant.idealLight} lux"
+    }
+
+    private fun readLastSensorData() {
+        testRef.limitToLast(1).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (dataSnapshot in snapshot.children) {
+                    val sensorData = dataSnapshot.getValue(SensorData::class.java)
+                    sensorData?.let {
+                        // Actualizar TextViews con los últimos datos
+                        textViewUltimoDatoLuz.text = String.format("%.1f lux", it.luz ?: 0f)
+                        textViewUltimoDatoTemperatura.text = String.format("%.1f°C", it.temperatura_ext ?: 0f)
+                        textViewUltimoDatoHumedad.text = String.format("%.1f%%", it.humdedad_ext ?: 0f)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Manejar error
+            }
+        })
     }
 
     inner class PlantAdapter(

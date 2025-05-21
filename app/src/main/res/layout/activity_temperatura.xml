@@ -18,7 +18,9 @@
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/imageViewIconTemperatura"
+        app:layout_constraintVertical_chainStyle="packed"/>
 
     <ImageView
         android:id="@+id/imageViewIconTemperatura"
@@ -29,16 +31,18 @@
         app:layout_constraintTop_toBottomOf="@id/textViewTitleTemperatura"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/chartTemperatura"
         android:layout_marginTop="16dp"/>
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chartTemperatura"
         android:layout_width="0dp"
-        android:layout_height="200dp"
+        android:layout_height="250dp"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/imageViewIconTemperatura"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewMaxTemperaturaLabel"/>
 
     <TextView
         android:id="@+id/textViewMaxTemperaturaLabel"
@@ -50,6 +54,7 @@
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/chartTemperatura"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewMinTemperaturaLabel"
         android:layout_marginTop="16dp"/>
 
     <TextView
@@ -73,6 +78,7 @@
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/textViewMaxTemperaturaLabel"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewPrediccionTemperaturaLabel"
         android:layout_marginTop="8dp"/>
 
     <TextView
@@ -96,7 +102,7 @@
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/textViewMinTemperaturaLabel"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="8dp"/>
+        app:layout_constraintBottom_toTopOf="@id/imageButtonBackTemperatura"/>
 
     <TextView
         android:id="@+id/textViewPrediccionTemperaturaValue"

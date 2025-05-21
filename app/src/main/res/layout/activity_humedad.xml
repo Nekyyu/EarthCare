@@ -18,102 +18,122 @@
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/imageViewIconHumedad"
+        app:layout_constraintVertical_chainStyle="packed"/>
 
     <ImageView
         android:id="@+id/imageViewIconHumedad"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:src="@drawable/ic_humedad" 
+        android:src="@drawable/ic_humedad"
         android:contentDescription="Icono de humedad"
         app:layout_constraintTop_toBottomOf="@id/textViewTitleHumedad"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewTitleHumedadExterior"
+        android:layout_marginTop="16dp"/>
+
+    <TextView
+        android:id="@+id/textViewTitleHumedadExterior"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Humedad Exterior"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/imageViewIconHumedad"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/chartHumedadExterior"
         android:layout_marginTop="16dp"/>
 
     <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/chartHumedad"
+        android:id="@+id/chartHumedadExterior"
         android:layout_width="0dp"
-        android:layout_height="200dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/imageViewIconHumedad"
+        android:layout_height="250dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/textViewTitleHumedadExterior"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewMaxHumedadExteriorLabel"/>
 
     <TextView
-        android:id="@+id/textViewMaxHumedadLabel"
+        android:id="@+id/textViewMaxHumedadExteriorLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hum. Max:"
+        android:text="Hum. Ext. Max:"
         android:textColor="@android:color/black"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/chartHumedad"
+        app:layout_constraintTop_toBottomOf="@id/chartHumedadExterior"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"/>
-
-    <TextView
-        android:id="@+id/textViewMaxHumedadValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMaxHumedadLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMaxHumedadLabel"
-        android:layout_marginStart="8dp"/>
-
-    <TextView
-        android:id="@+id/textViewMinHumedadLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hum. Min:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMaxHumedadLabel"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/textViewMinHumedadExteriorLabel"
         android:layout_marginTop="8dp"/>
 
     <TextView
-        android:id="@+id/textViewMinHumedadValue"
+        android:id="@+id/textViewMaxHumedadExteriorValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="--"
         android:textColor="@android:color/black"
         android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMinHumedadLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMinHumedadLabel"
+        app:layout_constraintTop_toTopOf="@id/textViewMaxHumedadExteriorLabel"
+        app:layout_constraintStart_toEndOf="@id/textViewMaxHumedadExteriorLabel"
         android:layout_marginStart="8dp"/>
 
     <TextView
-        android:id="@+id/textViewPrediccionHumedadLabel"
+        android:id="@+id/textViewMinHumedadExteriorLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Predicción Hum:"
+        android:text="Hum. Ext. Min:"
         android:textColor="@android:color/black"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMinHumedadLabel"
+        app:layout_constraintTop_toBottomOf="@id/textViewMaxHumedadExteriorLabel"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="8dp"/>
+        app:layout_constraintBottom_toTopOf="@id/textViewPrediccionHumedadExteriorLabel"
+        android:layout_marginTop="4dp"/>
 
     <TextView
-        android:id="@+id/textViewPrediccionHumedadValue"
+        android:id="@+id/textViewMinHumedadExteriorValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="--"
         android:textColor="@android:color/black"
         android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewPrediccionHumedadLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewPrediccionHumedadLabel"
+        app:layout_constraintTop_toTopOf="@id/textViewMinHumedadExteriorLabel"
+        app:layout_constraintStart_toEndOf="@id/textViewMinHumedadExteriorLabel"
+        android:layout_marginStart="8dp"/>
+
+    <TextView
+        android:id="@+id/textViewPrediccionHumedadExteriorLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Predicción Hum. Ext:"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/textViewMinHumedadExteriorLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/imageButtonBackHumedad"/>
+
+    <TextView
+        android:id="@+id/textViewPrediccionHumedadExteriorValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="--"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        app:layout_constraintTop_toTopOf="@id/textViewPrediccionHumedadExteriorLabel"
+        app:layout_constraintStart_toEndOf="@id/textViewPrediccionHumedadExteriorLabel"
         android:layout_marginStart="8dp"/>
 
     <ImageButton
         android:id="@+id/imageButtonBackHumedad"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_back_arrow" 
+        android:src="@drawable/ic_back_arrow"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Botón de regreso"
         app:layout_constraintBottom_toBottomOf="parent"

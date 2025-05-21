@@ -9,16 +9,18 @@
     <!-- Imagen de la planta en el centro -->
     <ImageView
         android:id="@+id/ivPlant"
-        android:layout_width="400dp"
-        android:layout_height="300dp"
+        android:layout_width="300dp"
+        android:layout_height="250dp"
         android:src="@drawable/ic_planta"
         android:contentDescription="Icono de la planta"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"/>
 
-    <!-- Contenedor de Luz (Superior Izquierda) -->
+    <!-- Contenedor de Luz (Esquina Superior Izquierda) -->
     <LinearLayout
         android:id="@+id/lightContainer"
         android:layout_width="wrap_content"
@@ -26,14 +28,23 @@
         android:orientation="vertical"
         android:gravity="center"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="48dp">
 
         <ImageView
             android:id="@+id/imageViewIconLuz"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
             android:src="@drawable/ic_luz"
-            android:contentDescription="Icono de luz" />
+            android:contentDescription="Icono de luz"/>
+
+        <TextView
+            android:id="@+id/textViewUltimoDatoLuz"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- lux"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -42,15 +53,9 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvLight"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 lux"
-            android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- Contenedor de Temperatura (Superior Derecha) -->
+    <!-- Contenedor de Temperatura (Esquina Superior Derecha) -->
     <LinearLayout
         android:id="@+id/temperatureContainer"
         android:layout_width="wrap_content"
@@ -58,14 +63,23 @@
         android:orientation="vertical"
         android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="48dp">
 
         <ImageView
             android:id="@+id/imageViewIconTemperatura"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
             android:src="@drawable/ic_temperatura"
-            android:contentDescription="Icono de temperatura" />
+            android:contentDescription="Icono de temperatura"/>
+
+        <TextView
+            android:id="@+id/textViewUltimoDatoTemperatura"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- °C"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -74,15 +88,9 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvTemperature"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0°C"
-            android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- Contenedor de Humedad (Inferior Izquierda) -->
+    <!-- Contenedor de Humedad (Esquina Inferior Izquierda) -->
     <LinearLayout
         android:id="@+id/humidityContainer"
         android:layout_width="wrap_content"
@@ -90,14 +98,23 @@
         android:orientation="vertical"
         android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="48dp">
 
         <ImageView
             android:id="@+id/imageViewIconHumedad"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
             android:src="@drawable/ic_humedad"
-            android:contentDescription="Icono de humedad" />
+            android:contentDescription="Icono de humedad"/>
+
+        <TextView
+            android:id="@+id/textViewUltimoDatoHumedad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- %"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -106,15 +123,9 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvHumidity"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0%"
-            android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- Botón en la parte inferior derecha -->
+    <!-- Botón para cambiar de planta (Esquina Inferior Derecha) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabChangePlant"
         android:layout_width="wrap_content"
