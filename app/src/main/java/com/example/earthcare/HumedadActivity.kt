@@ -17,6 +17,7 @@ import com.google.firebase.database.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
+import com.github.mikephil.charting.animation.Easing
 
 class HumedadActivity : AppCompatActivity() {
 
@@ -63,43 +64,88 @@ class HumedadActivity : AppCompatActivity() {
         chart.setDrawGridBackground(true)
         chart.setBackgroundColor(Color.WHITE)
 
+        // Configurar el eje X
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(true)
         xAxis.gridColor = Color.LTGRAY
         xAxis.gridLineWidth = 0.5f
         xAxis.setDrawAxisLine(true)
-        xAxis.textColor = Color.BLACK
+        xAxis.textColor = Color.DKGRAY
+        xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
+        xAxis.granularity = 1f
 
+        // Configurar el eje Y izquierdo
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.BLACK
+        leftAxis.textColor = Color.DKGRAY
+        leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
         leftAxis.gridColor = Color.LTGRAY
         leftAxis.gridLineWidth = 0.5f
         leftAxis.setDrawAxisLine(true)
-        leftAxis.axisMinimum = minY
-        leftAxis.axisMaximum = maxY
+        leftAxis.axisMinimum = 20f
+        leftAxis.axisMaximum = 80f
+        leftAxis.setDrawZeroLine(true)
+        leftAxis.zeroLineColor = Color.GRAY
+        leftAxis.zeroLineWidth = 1f
 
+        // Añadir líneas de límite para el rango óptimo
+        val limitHigh = com.github.mikephil.charting.components.LimitLine(60f, "Ideal")
+        limitHigh.lineWidth = 1.5f
+        limitHigh.lineColor = Color.rgb(76, 175, 80) // Verde más suave
+        limitHigh.textColor = Color.rgb(76, 175, 80)
+        limitHigh.textSize = 10f
+        limitHigh.enableDashedLine(10f, 10f, 0f)
+
+        val limitLow = com.github.mikephil.charting.components.LimitLine(50f, "Ideal")
+        limitLow.lineWidth = 1.5f
+        limitLow.lineColor = Color.rgb(76, 175, 80)
+        limitLow.textColor = Color.rgb(76, 175, 80)
+        limitLow.textSize = 10f
+        limitLow.enableDashedLine(10f, 10f, 0f)
+
+        leftAxis.addLimitLine(limitHigh)
+        leftAxis.addLimitLine(limitLow)
+
+        // Deshabilitar el eje Y derecho
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
-        chart.legend.textColor = Color.BLACK
+        // Configurar la leyenda
+        chart.legend.textColor = Color.DKGRAY
         chart.legend.textSize = 12f
-        chart.animateX(1500)
+        chart.legend.isEnabled = true
+        chart.legend.formSize = 12f
+        chart.legend.formLineWidth = 2f
+        chart.legend.form = com.github.mikephil.charting.components.Legend.LegendForm.LINE
+
+        // Configurar el marcador
+        chart.setDrawMarkers(true)
+        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, "%")
+
+        // Animación
+        chart.animateX(1500, Easing.EaseInOutQuart)
     }
 
     private fun readFirebaseData() {
-        testRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
+        // Calcular la marca de tiempo de inicio (últimas 24 horas)
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.HOUR, -24)
+        val startTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+
+        // Consultar datos dentro del rango de tiempo
+        val query = testRef.orderByChild("Hora").startAt(startTime)
+
+        query.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(querySnapshot: DataSnapshot) {
                 val exteriorEntries = mutableListOf<Entry>()
                 val timestamps = mutableListOf<String>()
                 var maxHumedadExterior = Float.NEGATIVE_INFINITY
                 var minHumedadExterior = Float.POSITIVE_INFINITY
 
-                // Obtener los últimos 24 datos
-                val dataList = snapshot.children.toList().takeLast(24)
+                val dataList = querySnapshot.children.toList()
 
                 dataList.forEachIndexed { index, dataSnapshot ->
                     val sensorData = dataSnapshot.getValue(SensorData::class.java)
@@ -163,17 +209,20 @@ class HumedadActivity : AppCompatActivity() {
         val dataSet = LineDataSet(entries, label)
         dataSet.color = color
         dataSet.setCircleColor(color)
-        dataSet.lineWidth = 2f
-        dataSet.circleRadius = 5f
+        dataSet.lineWidth = 2.5f
+        dataSet.circleRadius = 4f
         dataSet.setDrawCircleHole(false)
-        dataSet.valueTextColor = Color.BLACK
-        dataSet.valueTextSize = 8f
+        dataSet.valueTextColor = Color.DKGRAY
+        dataSet.valueTextSize = 9f
         dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
         dataSet.setDrawFilled(true)
         dataSet.fillColor = color
-        dataSet.fillAlpha = 30
-        dataSet.setDrawValues(true)
+        dataSet.fillAlpha = 20
+        dataSet.setDrawValues(false) // Ocultar valores por defecto
+        dataSet.setDrawHorizontalHighlightIndicator(false)
+        dataSet.setDrawHighlightIndicators(true)
 
+        // Formatear los valores
         dataSet.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return "${value.roundToInt()}${valueSuffix}"
@@ -181,10 +230,13 @@ class HumedadActivity : AppCompatActivity() {
         }
 
         val lineData = LineData(dataSet)
+        lineData.setValueTextColor(Color.DKGRAY)
+        lineData.setValueTextSize(9f)
         chart.data = lineData
 
+        // Configurar el formato del eje X
         val xAxis = chart.xAxis
-        val timeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
         xAxis.valueFormatter = object : IndexAxisValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 val index = value.toInt()
@@ -200,13 +252,8 @@ class HumedadActivity : AppCompatActivity() {
                 }
             }
         }
-        xAxis.granularity = 1f
-        xAxis.setLabelCount(0, false)
-        xAxis.labelRotationAngle = -45f
 
-        val leftAxis = chart.axisLeft
-        leftAxis.axisMaximum = maxY
-
+        // Actualizar la gráfica
         chart.invalidate()
     }
 

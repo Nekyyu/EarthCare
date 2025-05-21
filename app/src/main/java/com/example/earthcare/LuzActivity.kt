@@ -14,9 +14,10 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.firebase.database.*
-import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
+import com.github.mikephil.charting.animation.Easing
 
 class LuzActivity : AppCompatActivity() {
 
@@ -33,75 +34,118 @@ class LuzActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_luz)
 
-        // Initialize UI elements
+        // Inicializar elementos de UI
         chartLuz = findViewById(R.id.chartLuz)
         textViewMaxLuzValue = findViewById(R.id.textViewMaxLuzValue)
         textViewMinLuzValue = findViewById(R.id.textViewMinLuzValue)
         textViewPrediccionLuzValue = findViewById(R.id.textViewPrediccionLuzValue)
         imageButtonBackLuz = findViewById(R.id.imageButtonBackLuz)
 
-        // Initialize Firebase
+        // Inicializar Firebase
         database = FirebaseDatabase.getInstance()
         testRef = database.getReference("test")
 
-        // Set up back button
+        // Configurar botón de regreso
         imageButtonBackLuz.setOnClickListener {
             onBackPressed()
         }
 
-        // Configure chart
-        configureChart(chartLuz)
+        // Configurar gráfica
+        configureChart(chartLuz, 0f, 100f, "Luz", Color.rgb(255, 193, 7))
 
-        // Read data from Firebase
+        // Leer datos de Firebase
         readFirebaseData()
     }
 
-    private fun configureChart(chart: LineChart) {
+    private fun configureChart(chart: LineChart, axisMinimum: Float, axisMaximum: Float, title: String, color: Int) {
         chart.description.isEnabled = false
         chart.setTouchEnabled(true)
         chart.setPinchZoom(true)
         chart.setDrawGridBackground(true)
         chart.setBackgroundColor(Color.WHITE)
 
+        // Configurar el eje X
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(true)
         xAxis.gridColor = Color.LTGRAY
         xAxis.gridLineWidth = 0.5f
         xAxis.setDrawAxisLine(true)
-        xAxis.textColor = Color.BLACK
+        xAxis.textColor = Color.DKGRAY
+        xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
+        xAxis.granularity = 1f
 
+        // Configurar el eje Y izquierdo
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.BLACK
+        leftAxis.textColor = Color.DKGRAY
+        leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
         leftAxis.gridColor = Color.LTGRAY
         leftAxis.gridLineWidth = 0.5f
         leftAxis.setDrawAxisLine(true)
         leftAxis.axisMinimum = 0f
-        leftAxis.axisMaximum = 1000f // Valor máximo de luz
+        leftAxis.axisMaximum = 30000f
+        leftAxis.setDrawZeroLine(true)
+        leftAxis.zeroLineColor = Color.GRAY
+        leftAxis.zeroLineWidth = 1f
 
+        // Añadir líneas de límite para el rango óptimo
+        val limitHigh = com.github.mikephil.charting.components.LimitLine(20000f, "Ideal")
+        limitHigh.lineWidth = 1.5f
+        limitHigh.lineColor = Color.rgb(76, 175, 80) // Verde más suave
+        limitHigh.textColor = Color.rgb(76, 175, 80)
+        limitHigh.textSize = 10f
+        limitHigh.enableDashedLine(10f, 10f, 0f)
+
+        val limitLow = com.github.mikephil.charting.components.LimitLine(10000f, "Ideal")
+        limitLow.lineWidth = 1.5f
+        limitLow.lineColor = Color.rgb(76, 175, 80)
+        limitLow.textColor = Color.rgb(76, 175, 80)
+        limitLow.textSize = 10f
+        limitLow.enableDashedLine(10f, 10f, 0f)
+
+        leftAxis.addLimitLine(limitHigh)
+        leftAxis.addLimitLine(limitLow)
+
+        // Deshabilitar el eje Y derecho
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
-        chart.legend.textColor = Color.BLACK
+        // Configurar la leyenda
+        chart.legend.textColor = Color.DKGRAY
         chart.legend.textSize = 12f
-        chart.animateX(1500)
+        chart.legend.isEnabled = true
+        chart.legend.formSize = 12f
+        chart.legend.formLineWidth = 2f
+        chart.legend.form = com.github.mikephil.charting.components.Legend.LegendForm.LINE
+
+        // Configurar el marcador
+        chart.setDrawMarkers(true)
+        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, " lux")
+
+        // Animación
+        chart.animateX(1500, Easing.EaseInOutQuart)
     }
 
     private fun readFirebaseData() {
-        testRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
+        // Calcular la marca de tiempo de inicio (últimas 24 horas)
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.HOUR, -24)
+        val startTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+
+        // Consultar datos dentro del rango de tiempo
+        val query = testRef.orderByChild("Hora").startAt(startTime)
+
+        query.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(querySnapshot: DataSnapshot) {
                 val entries = mutableListOf<Entry>()
                 val timestamps = mutableListOf<String>()
                 var maxLuz = Float.NEGATIVE_INFINITY
                 var minLuz = Float.POSITIVE_INFINITY
-                var sumLuz = 0f
-                var count = 0
 
-                // Obtener los últimos 24 datos
-                val dataList = snapshot.children.toList().takeLast(24)
+                val dataList = querySnapshot.children.toList()
 
                 dataList.forEachIndexed { index, dataSnapshot ->
                     val sensorData = dataSnapshot.getValue(SensorData::class.java)
@@ -109,33 +153,36 @@ class LuzActivity : AppCompatActivity() {
                         val timestamp = it.Hora ?: ""
                         timestamps.add(timestamp)
 
+                        // Añadir punto para luz si existe
                         it.luz?.let { luzValue ->
                             entries.add(Entry(index.toFloat(), luzValue))
                             if (luzValue > maxLuz) maxLuz = luzValue
                             if (luzValue < minLuz) minLuz = luzValue
-                            sumLuz += luzValue
-                            count++
                         }
                     }
                 }
 
                 if (entries.isNotEmpty()) {
-                    updateChart(entries, timestamps)
-                    updateMinMax(maxLuz, minLuz)
-                    
-                    // Calcular predicción basada en la tendencia
-                    val prediccion = calcularPrediccion(entries)
-                    textViewPrediccionLuzValue.text = String.format("%.1f lux", prediccion)
+                    updateChartData(chartLuz, entries, timestamps, "Luz", Color.rgb(255, 193, 7), "%", 100f)
+                    updateMinMax(textViewMaxLuzValue, textViewMinLuzValue, maxLuz, minLuz, "%.1f%%")
+                    val prediccion = calcularPrediccion(entries, 0f, 100f)
+                    textViewPrediccionLuzValue.text = String.format("%.1f%%", prediccion)
+                } else {
+                    // Si no hay datos de luz, limpiar la gráfica y los valores
+                    chartLuz.clear()
+                    textViewMaxLuzValue.text = "--"
+                    textViewMinLuzValue.text = "--"
+                    textViewPrediccionLuzValue.text = "--"
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
+                // Manejar error
             }
         })
     }
 
-    private fun calcularPrediccion(entries: List<Entry>): Float {
+    private fun calcularPrediccion(entries: List<Entry>, axisMinimum: Float, axisMaximum: Float): Float {
         if (entries.size < 2) return entries.firstOrNull()?.y ?: 0f
 
         // Calcular la pendiente de la línea de tendencia
@@ -157,36 +204,41 @@ class LuzActivity : AppCompatActivity() {
         val prediccion = ultimoValor + pendiente
 
         // Asegurar que la predicción esté dentro de límites razonables
-        return prediccion.coerceIn(0f, 1000f)
+        return prediccion.coerceIn(axisMinimum, axisMaximum)
     }
 
-    private fun updateChart(entries: List<Entry>, timestamps: List<String>) {
-        val dataSet = LineDataSet(entries, "Luz")
-        dataSet.color = Color.rgb(255, 193, 7) // Color amarillo
-        dataSet.setCircleColor(Color.rgb(255, 193, 7))
-        dataSet.lineWidth = 2f
-        dataSet.circleRadius = 5f
+    private fun updateChartData(chart: LineChart, entries: List<Entry>, timestamps: List<String>, title: String, color: Int, unit: String, axisMaximum: Float) {
+        val dataSet = LineDataSet(entries, title)
+        dataSet.color = color
+        dataSet.setCircleColor(color)
+        dataSet.lineWidth = 2.5f
+        dataSet.circleRadius = 4f
         dataSet.setDrawCircleHole(false)
-        dataSet.valueTextColor = Color.BLACK
-        dataSet.valueTextSize = 8f
+        dataSet.valueTextColor = Color.DKGRAY
+        dataSet.valueTextSize = 9f
         dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
         dataSet.setDrawFilled(true)
-        dataSet.fillColor = Color.rgb(255, 193, 7)
-        dataSet.fillAlpha = 30
-        dataSet.setDrawValues(true)
+        dataSet.fillColor = color
+        dataSet.fillAlpha = 20
+        dataSet.setDrawValues(false) // Ocultar valores por defecto
+        dataSet.setDrawHorizontalHighlightIndicator(false)
+        dataSet.setDrawHighlightIndicators(true)
 
-        // Formatear los valores del eje Y para mostrar lux
+        // Formatear los valores
         dataSet.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return "${value.roundToInt()} lux"
+                return "${value.roundToInt()} $unit"
             }
         }
 
         val lineData = LineData(dataSet)
-        chartLuz.data = lineData
+        lineData.setValueTextColor(Color.DKGRAY)
+        lineData.setValueTextSize(9f)
+        chart.data = lineData
 
-        val xAxis = chartLuz.xAxis
-        val timeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        // Configurar el formato del eje X
+        val xAxis = chart.xAxis
+        val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
         xAxis.valueFormatter = object : IndexAxisValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 val index = value.toInt()
@@ -202,15 +254,13 @@ class LuzActivity : AppCompatActivity() {
                 }
             }
         }
-        xAxis.granularity = 1f
-        xAxis.setLabelCount(0, false)
-        xAxis.labelRotationAngle = -45f
 
-        chartLuz.invalidate()
+        // Actualizar la gráfica
+        chart.invalidate()
     }
 
-    private fun updateMinMax(max: Float, min: Float) {
-        textViewMaxLuzValue.text = String.format("%.1f lux", max)
-        textViewMinLuzValue.text = String.format("%.1f lux", min)
+    private fun updateMinMax(textViewMax: TextView, textViewMin: TextView, max: Float, min: Float, format: String) {
+        textViewMax.text = String.format(format, max)
+        textViewMin.text = String.format(format, min)
     }
-} 
+}
