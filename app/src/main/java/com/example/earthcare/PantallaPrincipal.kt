@@ -1,5 +1,7 @@
 package com.example.earthcare
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.app.Dialog
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -9,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.earthcare.databinding.DialogPlantQuestionnaireBinding
@@ -70,6 +73,9 @@ class PantallaPrincipal : AppCompatActivity() {
 
         // Cargar datos del usuario
         initializeUserData()
+
+        // Configurar animaciones
+        setupAnimations()
     }
 
     private fun setupViews() {
@@ -99,6 +105,65 @@ class PantallaPrincipal : AppCompatActivity() {
         imageViewIconHumedad.setOnClickListener {
             startActivity(Intent(this, HumedadActivity::class.java))
         }
+    }
+
+    private fun setupAnimations() {
+        // Animación de pulso para PlantaGPT
+        val pulseAnim = ObjectAnimator.ofPropertyValuesHolder(
+            findViewById(R.id.PlantaGPT),
+            PropertyValuesHolder.ofFloat("scaleX", 1.1f),
+            PropertyValuesHolder.ofFloat("scaleY", 1.1f)
+        ).apply {
+            duration = 1000
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            start()
+        }
+
+        // Animación de crecimiento para la planta
+        findViewById<ImageView>(R.id.ivPlant).apply {
+            scaleX = 0.9f
+            scaleY = 0.9f
+            animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(1500)
+                .start()
+        }
+    }
+
+    private fun updateSensorUI(luz: Float, temp: Float, hum: Float) {
+        // Animación para luz
+        if (textViewUltimoDatoLuz.text != String.format("%.1f lux", luz)) {
+            imageViewIconLuz.animate().alpha(0.5f).setDuration(200).withEndAction {
+                imageViewIconLuz.animate().alpha(1f).setDuration(200)
+            }.start()
+        }
+
+        // Color para temperatura
+        val tempColor = when {
+            temp < 15 -> ContextCompat.getColor(this, R.color.coolTemp)
+            temp > 30 -> ContextCompat.getColor(this, R.color.hotTemp)
+            else -> ContextCompat.getColor(this, R.color.normalTemp)
+        }
+        imageViewIconTemperatura.setColorFilter(tempColor)
+
+        // Animación para humedad
+        if (textViewUltimoDatoHumedad.text != String.format("%.1f%%", hum)) {
+            imageViewIconHumedad.animate()
+                .translationY(-10f)
+                .setDuration(300)
+                .withEndAction {
+                    imageViewIconHumedad.animate()
+                        .translationY(0f)
+                        .setDuration(300)
+                }.start()
+        }
+
+        // Actualizar textos
+        textViewUltimoDatoLuz.text = String.format("%.1f lux", luz)
+        textViewUltimoDatoTemperatura.text = String.format("%.1f°C", temp)
+        textViewUltimoDatoHumedad.text = String.format("%.1f%%", hum)
     }
 
     private fun initializeUserData() {
@@ -196,6 +261,7 @@ class PantallaPrincipal : AppCompatActivity() {
             }
         })
     }
+
     private fun updatePlantUI() {
         currentPlantId?.let { plantId ->
             currentUserPlants.find { it.id == plantId }?.let { plant ->
@@ -395,9 +461,7 @@ class PantallaPrincipal : AppCompatActivity() {
                             }
 
                             runOnUiThread {
-                                textViewUltimoDatoLuz.text = String.format("%.1f lux", luz)
-                                textViewUltimoDatoTemperatura.text = String.format("%.1f°C", temp)
-                                textViewUltimoDatoHumedad.text = String.format("%.1f%%", hum)
+                                updateSensorUI(luz, temp, hum)
                             }
                         }
                     } catch (e: Exception) {
@@ -428,9 +492,7 @@ class PantallaPrincipal : AppCompatActivity() {
         } ?: run {
             // Si no hay planta seleccionada
             runOnUiThread {
-                textViewUltimoDatoLuz.text = "0 lux"
-                textViewUltimoDatoTemperatura.text = "0°C"
-                textViewUltimoDatoHumedad.text = "0%"
+                updateSensorUI(0f, 0f, 0f)
             }
         }
     }

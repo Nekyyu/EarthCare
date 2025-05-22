@@ -22,6 +22,10 @@
     <color name="white_alpha_60">#99FFFFFF</color>
     <color name="primary_color">#6200EE</color>
     <color name="primary_dark">#3700B3</color>
+    <color name="primaryColor">#FF4CAF50</color>
+    <color name="coolTemp">#FF2196F3</color>
+    <color name="normalTemp">#FF4CAF50</color>
+    <color name="hotTemp">#FFF44336</color>
     <!-- Colores de fondo -->
     <color name="light_grey_background">#FAFAFA</color>
 
