@@ -4,8 +4,10 @@ import android.graphics.Color
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
@@ -13,11 +15,15 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.animation.Easing
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToInt
-import com.github.mikephil.charting.animation.Easing
 
 class HumedadActivity : AppCompatActivity() {
 
@@ -27,14 +33,22 @@ class HumedadActivity : AppCompatActivity() {
     private lateinit var textViewPrediccionHumedadExteriorValue: TextView
     private lateinit var imageButtonBackHumedad: ImageButton
 
+    private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseDatabase
-    private lateinit var testRef: DatabaseReference
+    private lateinit var userRef: DatabaseReference
+    private lateinit var sensorDataRef: DatabaseReference
+    private var currentPlantId: String = ""
+    private var idealHumMin: Float = 40f
+    private var idealHumMax: Float = 70f
+
+    private lateinit var currentPlantListener: ValueEventListener
+    private lateinit var sensorDataListener: ValueEventListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_humedad)
 
-        // Inicializar elementos de UI para la humedad exterior
+        // Inicializar elementos de UI
         chartHumedadExterior = findViewById(R.id.chartHumedadExterior)
         textViewMaxHumedadExteriorValue = findViewById(R.id.textViewMaxHumedadExteriorValue)
         textViewMinHumedadExteriorValue = findViewById(R.id.textViewMinHumedadExteriorValue)
@@ -42,29 +56,124 @@ class HumedadActivity : AppCompatActivity() {
         imageButtonBackHumedad = findViewById(R.id.imageButtonBackHumedad)
 
         // Inicializar Firebase
+        auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
-        testRef = database.getReference("test")
+        val currentUser = auth.currentUser ?: run {
+            finish()
+            return
+        }
 
-        // Configurar botón de regreso
+        userRef = database.getReference("users").child(currentUser.uid)
+        sensorDataRef = database.getReference("sensorData").child(currentUser.uid)
+
+        // Configurar gráfica
+        configureChart(chartHumedadExterior)
+
+        // Configurar listeners
+        setupFirebaseListeners()
+
         imageButtonBackHumedad.setOnClickListener {
             onBackPressed()
         }
-
-        // Configurar gráfica
-        configureChart(chartHumedadExterior, 0f, 100f, "Humedad Exterior", Color.rgb(0, 150, 136))
-
-        // Leer datos de Firebase
-        readFirebaseData()
     }
 
-    private fun configureChart(chart: LineChart, minY: Float, maxY: Float, label: String, color: Int) {
+    private fun setupFirebaseListeners() {
+        // Listener para cambios en la planta actual
+        currentPlantListener = userRef.child("currentPlant").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val newPlantId = snapshot.getValue(String::class.java) ?: ""
+                if (newPlantId != currentPlantId) {
+                    currentPlantId = newPlantId
+                    if (currentPlantId.isNotEmpty()) {
+                        getIdealHumidity()
+                        readFirebaseData()
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@HumedadActivity, "Error al obtener planta actual", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun getIdealHumidity() {
+        if (currentPlantId.isEmpty()) return
+
+        userRef.child("plants").child(currentPlantId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Obtener valores con manejo robusto de diferentes tipos y valores por defecto
+                idealHumMin = when {
+                    snapshot.hasChild("idealHumidityMin") -> when (val hum = snapshot.child("idealHumidityMin").value) {
+                        is Long -> hum.toFloat()
+                        is Double -> hum.toFloat()
+                        is Int -> hum.toFloat()
+                        is Float -> hum
+                        else -> 40f
+                    }
+                    snapshot.hasChild("idealHumidity") -> {
+                        val hum = when (val humValue = snapshot.child("idealHumidity").value) {
+                            is Long -> humValue.toFloat()
+                            is Double -> humValue.toFloat()
+                            is Int -> humValue.toFloat()
+                            is Float -> humValue
+                            else -> 40f
+                        }
+                        // Ajuste especial para valores bajos de humedad
+                        when {
+                            hum < 20f -> max(0f, hum - 5f) // Rango más pequeño para valores bajos
+                            else -> hum - 15f // Rango normal para otros valores
+                        }
+                    }
+                    else -> 40f
+                }
+
+                idealHumMax = when {
+                    snapshot.hasChild("idealHumidityMax") -> when (val hum = snapshot.child("idealHumidityMax").value) {
+                        is Long -> hum.toFloat()
+                        is Double -> hum.toFloat()
+                        is Int -> hum.toFloat()
+                        is Float -> hum
+                        else -> 70f
+                    }
+                    snapshot.hasChild("idealHumidity") -> {
+                        val hum = when (val humValue = snapshot.child("idealHumidity").value) {
+                            is Long -> humValue.toFloat()
+                            is Double -> humValue.toFloat()
+                            is Int -> humValue.toFloat()
+                            is Float -> humValue
+                            else -> 70f
+                        }
+                        // Ajuste especial para valores bajos de humedad
+                        when {
+                            hum < 20f -> hum + 5f // Rango más pequeño para valores bajos
+                            else -> hum + 15f // Rango normal para otros valores
+                        }
+                    }
+                    else -> 70f
+                }
+
+                // Asegurarse de que los valores estén dentro de límites razonables
+                idealHumMin = max(0f, idealHumMin)
+                idealHumMax = min(100f, idealHumMax)
+
+                updateIdealHumidityLines()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@HumedadActivity, "Error al obtener humedades ideales", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun configureChart(chart: LineChart) {
         chart.description.isEnabled = false
         chart.setTouchEnabled(true)
         chart.setPinchZoom(true)
         chart.setDrawGridBackground(true)
         chart.setBackgroundColor(Color.WHITE)
 
-        // Configurar el eje X
+        // Configurar eje X
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(true)
@@ -77,7 +186,7 @@ class HumedadActivity : AppCompatActivity() {
         xAxis.labelRotationAngle = -45f
         xAxis.granularity = 1f
 
-        // Configurar el eje Y izquierdo
+        // Configurar eje Y izquierdo
         val leftAxis = chart.axisLeft
         leftAxis.textColor = Color.DKGRAY
         leftAxis.textSize = 10f
@@ -85,43 +194,25 @@ class HumedadActivity : AppCompatActivity() {
         leftAxis.gridColor = Color.LTGRAY
         leftAxis.gridLineWidth = 0.5f
         leftAxis.setDrawAxisLine(true)
-        leftAxis.axisMinimum = 20f
-        leftAxis.axisMaximum = 80f
+        leftAxis.axisMinimum = 0f
+        leftAxis.axisMaximum = 100f
         leftAxis.setDrawZeroLine(true)
         leftAxis.zeroLineColor = Color.GRAY
         leftAxis.zeroLineWidth = 1f
 
-        // Añadir líneas de límite para el rango óptimo
-        val limitHigh = com.github.mikephil.charting.components.LimitLine(60f, "Ideal")
-        limitHigh.lineWidth = 1.5f
-        limitHigh.lineColor = Color.rgb(76, 175, 80) // Verde más suave
-        limitHigh.textColor = Color.rgb(76, 175, 80)
-        limitHigh.textSize = 10f
-        limitHigh.enableDashedLine(10f, 10f, 0f)
-
-        val limitLow = com.github.mikephil.charting.components.LimitLine(50f, "Ideal")
-        limitLow.lineWidth = 1.5f
-        limitLow.lineColor = Color.rgb(76, 175, 80)
-        limitLow.textColor = Color.rgb(76, 175, 80)
-        limitLow.textSize = 10f
-        limitLow.enableDashedLine(10f, 10f, 0f)
-
-        leftAxis.addLimitLine(limitHigh)
-        leftAxis.addLimitLine(limitLow)
-
-        // Deshabilitar el eje Y derecho
+        // Configurar eje Y derecho
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
-        // Configurar la leyenda
+        // Configurar leyenda
         chart.legend.textColor = Color.DKGRAY
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
         chart.legend.formLineWidth = 2f
-        chart.legend.form = com.github.mikephil.charting.components.Legend.LegendForm.LINE
+        chart.legend.form = Legend.LegendForm.LINE
 
-        // Configurar el marcador
+        // Configurar marcador
         chart.setDrawMarkers(true)
         chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, "%")
 
@@ -129,61 +220,83 @@ class HumedadActivity : AppCompatActivity() {
         chart.animateX(1500, Easing.EaseInOutQuart)
     }
 
+    private fun updateIdealHumidityLines() {
+        val leftAxis = chartHumedadExterior.axisLeft
+        leftAxis.removeAllLimitLines()
+
+        // Modificado para mostrar líneas incluso con valores bajos
+        if (idealHumMin >= 0 && idealHumMax > idealHumMin) {
+            // Línea de humedad mínima ideal
+            val minLimitLine = LimitLine(idealHumMin, "Mín: ${idealHumMin.roundToInt()}%")
+            minLimitLine.lineWidth = 1.5f
+            minLimitLine.lineColor = Color.rgb(33, 150, 243) // Azul
+            minLimitLine.textColor = Color.rgb(33, 150, 243)
+            minLimitLine.textSize = 10f
+            minLimitLine.enableDashedLine(10f, 10f, 0f)
+
+            // Línea de humedad máxima ideal
+            val maxLimitLine = LimitLine(idealHumMax, "Máx: ${idealHumMax.roundToInt()}%")
+            maxLimitLine.lineWidth = 1.5f
+            maxLimitLine.lineColor = Color.rgb(33, 150, 243)
+            maxLimitLine.textColor = Color.rgb(33, 150, 243)
+            maxLimitLine.textSize = 10f
+            maxLimitLine.enableDashedLine(10f, 10f, 0f)
+
+            leftAxis.addLimitLine(minLimitLine)
+            leftAxis.addLimitLine(maxLimitLine)
+        }
+
+        chartHumedadExterior.invalidate()
+    }
+
     private fun readFirebaseData() {
-        // Calcular la marca de tiempo de inicio (últimas 24 horas)
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.HOUR, -24)
-        val startTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+        // Remover listener anterior si existe
+        if (::sensorDataListener.isInitialized) {
+            sensorDataRef.child(currentPlantId).child("history").removeEventListener(sensorDataListener)
+        }
 
-        // Consultar datos dentro del rango de tiempo
-        val query = testRef.orderByChild("Hora").startAt(startTime)
+        if (currentPlantId.isEmpty()) return
 
-        query.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(querySnapshot: DataSnapshot) {
-                val exteriorEntries = mutableListOf<Entry>()
-                val timestamps = mutableListOf<String>()
-                var maxHumedadExterior = Float.NEGATIVE_INFINITY
-                var minHumedadExterior = Float.POSITIVE_INFINITY
+        sensorDataListener = sensorDataRef.child(currentPlantId).child("history")
+            .orderByChild("timestamp")
+            .limitToLast(24)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val entries = mutableListOf<Entry>()
+                    val timestamps = mutableListOf<String>()
+                    var maxHumedad = Float.NEGATIVE_INFINITY
+                    var minHumedad = Float.POSITIVE_INFINITY
 
-                val dataList = querySnapshot.children.toList()
+                    snapshot.children.forEachIndexed { index, dataSnapshot ->
+                        val sensorData = dataSnapshot.getValue(SensorData::class.java)
+                        sensorData?.let {
+                            val timestamp = it.Hora ?: ""
+                            timestamps.add(timestamp)
 
-                dataList.forEachIndexed { index, dataSnapshot ->
-                    val sensorData = dataSnapshot.getValue(SensorData::class.java)
-                    sensorData?.let {
-                        val timestamp = it.Hora ?: ""
-                        timestamps.add(timestamp)
-
-                        // Añadir punto para humedad exterior si existe
-                        it.humdedad_ext?.let { humedadValue ->
-                            exteriorEntries.add(Entry(index.toFloat(), humedadValue))
-                            if (humedadValue > maxHumedadExterior) maxHumedadExterior = humedadValue
-                            if (humedadValue < minHumedadExterior) minHumedadExterior = humedadValue
+                            it.humdedad_ext?.let { humedadValue ->
+                                entries.add(Entry(index.toFloat(), humedadValue))
+                                if (humedadValue > maxHumedad) maxHumedad = humedadValue
+                                if (humedadValue < minHumedad) minHumedad = humedadValue
+                            }
                         }
+                    }
+
+                    if (entries.isNotEmpty()) {
+                        updateChart(entries, timestamps)
+                        updateMinMax(maxHumedad, minHumedad)
+                        val prediccion = calcularPrediccion(entries)
+                        textViewPrediccionHumedadExteriorValue.text = String.format("%.1f%%", prediccion)
                     }
                 }
 
-                if (exteriorEntries.isNotEmpty()) {
-                    updateChartData(chartHumedadExterior, exteriorEntries, timestamps, "Humedad Exterior", Color.rgb(0, 150, 136), "%", 100f)
-                    updateMinMax(textViewMaxHumedadExteriorValue, textViewMinHumedadExteriorValue, maxHumedadExterior, minHumedadExterior, "%.1f%%")
-                    val prediccionExterior = calcularPrediccion(exteriorEntries, 0f, 100f)
-                    textViewPrediccionHumedadExteriorValue.text = String.format("%.1f%%", prediccionExterior)
-                } else {
-                    // Si no hay datos de humedad exterior, limpiar la gráfica y los valores
-                    chartHumedadExterior.clear()
-                    textViewMaxHumedadExteriorValue.text = "--"
-                    textViewMinHumedadExteriorValue.text = "--"
-                    textViewPrediccionHumedadExteriorValue.text = "--"
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(this@HumedadActivity, "Error al leer datos", Toast.LENGTH_SHORT).show()
                 }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar error
-            }
-        })
+            })
     }
 
-    private fun calcularPrediccion(entries: List<Entry>, minY: Float, maxY: Float): Float {
-        if (entries.size < 2) return entries.lastOrNull()?.y ?: (minY + maxY) / 2f
+    private fun calcularPrediccion(entries: List<Entry>): Float {
+        if (entries.size < 2) return entries.firstOrNull()?.y ?: 50f
 
         var sumX = 0f
         var sumY = 0f
@@ -198,17 +311,17 @@ class HumedadActivity : AppCompatActivity() {
             sumX2 += entry.x * entry.x
         }
 
-        val pendiente = if (n * sumX2 - sumX * sumX == 0f) 0f else (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+        val pendiente = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
         val ultimoValor = entries.last().y
         val prediccion = ultimoValor + pendiente
 
-        return prediccion.coerceIn(minY, maxY)
+        return prediccion.coerceIn(0f, 100f)
     }
 
-    private fun updateChartData(chart: LineChart, entries: List<Entry>, timestamps: List<String>, label: String, color: Int, valueSuffix: String, maxY: Float) {
-        val dataSet = LineDataSet(entries, label)
-        dataSet.color = color
-        dataSet.setCircleColor(color)
+    private fun updateChart(entries: List<Entry>, timestamps: List<String>) {
+        val dataSet = LineDataSet(entries, "Humedad Exterior")
+        dataSet.color = Color.rgb(0, 150, 136) // Verde agua
+        dataSet.setCircleColor(Color.rgb(0, 150, 136))
         dataSet.lineWidth = 2.5f
         dataSet.circleRadius = 4f
         dataSet.setDrawCircleHole(false)
@@ -216,26 +329,24 @@ class HumedadActivity : AppCompatActivity() {
         dataSet.valueTextSize = 9f
         dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
         dataSet.setDrawFilled(true)
-        dataSet.fillColor = color
+        dataSet.fillColor = Color.rgb(0, 150, 136)
         dataSet.fillAlpha = 20
-        dataSet.setDrawValues(false) // Ocultar valores por defecto
+        dataSet.setDrawValues(false)
         dataSet.setDrawHorizontalHighlightIndicator(false)
         dataSet.setDrawHighlightIndicators(true)
 
-        // Formatear los valores
         dataSet.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                return "${value.roundToInt()}${valueSuffix}"
+                return "${value.roundToInt()}%"
             }
         }
 
         val lineData = LineData(dataSet)
         lineData.setValueTextColor(Color.DKGRAY)
         lineData.setValueTextSize(9f)
-        chart.data = lineData
+        chartHumedadExterior.data = lineData
 
-        // Configurar el formato del eje X
-        val xAxis = chart.xAxis
+        val xAxis = chartHumedadExterior.xAxis
         val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
         xAxis.valueFormatter = object : IndexAxisValueFormatter() {
             override fun getFormattedValue(value: Float): String {
@@ -253,12 +364,22 @@ class HumedadActivity : AppCompatActivity() {
             }
         }
 
-        // Actualizar la gráfica
-        chart.invalidate()
+        chartHumedadExterior.invalidate()
     }
 
-    private fun updateMinMax(textViewMax: TextView, textViewMin: TextView, max: Float, min: Float, format: String) {
-        textViewMax.text = String.format(format, max)
-        textViewMin.text = String.format(format, min)
+    private fun updateMinMax(max: Float, min: Float) {
+        textViewMaxHumedadExteriorValue.text = String.format("%.1f%%", max)
+        textViewMinHumedadExteriorValue.text = String.format("%.1f%%", min)
     }
-} 
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Limpiar listeners
+        if (::currentPlantListener.isInitialized) {
+            userRef.child("currentPlant").removeEventListener(currentPlantListener)
+        }
+        if (::sensorDataListener.isInitialized && currentPlantId.isNotEmpty()) {
+            sensorDataRef.child(currentPlantId).child("history").removeEventListener(sensorDataListener)
+        }
+    }
+}

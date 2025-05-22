@@ -48,6 +48,10 @@ dependencies {
     implementation ("com.google.android.material:material:1.11.0")
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.google.firebase:firebase-database-ktx:20.3.0")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.google.firebase:firebase-auth-ktx:22.3.0")
+
 
 
     implementation(platform(libs.firebase.bom))
@@ -69,5 +73,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
 }

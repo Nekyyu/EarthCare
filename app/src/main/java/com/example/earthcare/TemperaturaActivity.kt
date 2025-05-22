@@ -4,8 +4,10 @@ import android.graphics.Color
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
@@ -13,15 +15,13 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.animation.Easing
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.*
-import com.github.mikephil.charting.components.LimitLine
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.Legend.LegendForm
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import com.github.mikephil.charting.animation.Easing
 
 class TemperaturaActivity : AppCompatActivity() {
 
@@ -31,8 +31,16 @@ class TemperaturaActivity : AppCompatActivity() {
     private lateinit var textViewPrediccionTemperaturaValue: TextView
     private lateinit var imageButtonBackTemperatura: ImageButton
 
+    private lateinit var auth: FirebaseAuth
     private lateinit var database: FirebaseDatabase
-    private lateinit var testRef: DatabaseReference
+    private lateinit var userRef: DatabaseReference
+    private lateinit var sensorDataRef: DatabaseReference
+    private var currentPlantId: String = ""
+    private var idealTempMin: Float = 18f
+    private var idealTempMax: Float = 25f
+
+    private lateinit var currentPlantListener: ValueEventListener
+    private lateinit var sensorDataListener: ValueEventListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,19 +54,96 @@ class TemperaturaActivity : AppCompatActivity() {
         imageButtonBackTemperatura = findViewById(R.id.imageButtonBackTemperatura)
 
         // Inicializar Firebase
+        auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
-        testRef = database.getReference("test")
-
-        // Configurar botón de regreso
-        imageButtonBackTemperatura.setOnClickListener {
-            onBackPressed()
+        val currentUser = auth.currentUser ?: run {
+            finish()
+            return
         }
+
+        userRef = database.getReference("users").child(currentUser.uid)
+        sensorDataRef = database.getReference("sensorData").child(currentUser.uid)
 
         // Configurar gráfica
         configureChart(chartTemperatura)
 
-        // Leer datos de Firebase
-        readFirebaseData()
+        // Configurar listeners
+        setupFirebaseListeners()
+
+        imageButtonBackTemperatura.setOnClickListener {
+            onBackPressed()
+        }
+    }
+
+    private fun setupFirebaseListeners() {
+        // Listener para cambios en la planta actual
+        currentPlantListener = userRef.child("currentPlant").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val newPlantId = snapshot.getValue(String::class.java) ?: ""
+                if (newPlantId != currentPlantId) {
+                    currentPlantId = newPlantId
+                    if (currentPlantId.isNotEmpty()) {
+                        getIdealTemperatures()
+                        readFirebaseData()
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@TemperaturaActivity, "Error al obtener planta actual", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun getIdealTemperatures() {
+        if (currentPlantId.isEmpty()) return
+
+        userRef.child("plants").child(currentPlantId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Obtener valores con manejo robusto de diferentes tipos y valores por defecto
+                idealTempMin = when {
+                    snapshot.hasChild("idealTempMin") -> when (val temp = snapshot.child("idealTempMin").value) {
+                        is Long -> temp.toFloat()
+                        is Double -> temp.toFloat()
+                        is Int -> temp.toFloat()
+                        is Float -> temp
+                        else -> 18f
+                    }
+                    snapshot.hasChild("idealTemp") -> when (val temp = snapshot.child("idealTemp").value) {
+                        is Long -> temp.toFloat() - 5f
+                        is Double -> temp.toFloat() - 5f
+                        is Int -> temp.toFloat() - 5f
+                        is Float -> temp - 5f
+                        else -> 18f
+                    }
+                    else -> 18f
+                }
+
+                idealTempMax = when {
+                    snapshot.hasChild("idealTempMax") -> when (val temp = snapshot.child("idealTempMax").value) {
+                        is Long -> temp.toFloat()
+                        is Double -> temp.toFloat()
+                        is Int -> temp.toFloat()
+                        is Float -> temp
+                        else -> 25f
+                    }
+                    snapshot.hasChild("idealTemp") -> when (val temp = snapshot.child("idealTemp").value) {
+                        is Long -> temp.toFloat() + 5f
+                        is Double -> temp.toFloat() + 5f
+                        is Int -> temp.toFloat() + 5f
+                        is Float -> temp + 5f
+                        else -> 25f
+                    }
+                    else -> 25f
+                }
+
+                updateIdealTemperatureLines()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@TemperaturaActivity, "Error al obtener temperaturas ideales", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun configureChart(chart: LineChart) {
@@ -68,7 +153,7 @@ class TemperaturaActivity : AppCompatActivity() {
         chart.setDrawGridBackground(true)
         chart.setBackgroundColor(Color.WHITE)
 
-        // Configurar el eje X
+        // Configurar eje X
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(true)
@@ -81,7 +166,7 @@ class TemperaturaActivity : AppCompatActivity() {
         xAxis.labelRotationAngle = -45f
         xAxis.granularity = 1f
 
-        // Configurar el eje Y izquierdo
+        // Configurar eje Y izquierdo
         val leftAxis = chart.axisLeft
         leftAxis.textColor = Color.DKGRAY
         leftAxis.textSize = 10f
@@ -95,29 +180,11 @@ class TemperaturaActivity : AppCompatActivity() {
         leftAxis.zeroLineColor = Color.GRAY
         leftAxis.zeroLineWidth = 1f
 
-        // Añadir líneas de límite para el rango óptimo
-        val limitHigh = LimitLine(25f, "Ideal")
-        limitHigh.lineWidth = 1.5f
-        limitHigh.lineColor = Color.rgb(76, 175, 80) // Verde más suave
-        limitHigh.textColor = Color.rgb(76, 175, 80)
-        limitHigh.textSize = 10f
-        limitHigh.enableDashedLine(10f, 10f, 0f)
-
-        val limitLow = LimitLine(18f, "Ideal")
-        limitLow.lineWidth = 1.5f
-        limitLow.lineColor = Color.rgb(76, 175, 80)
-        limitLow.textColor = Color.rgb(76, 175, 80)
-        limitLow.textSize = 10f
-        limitLow.enableDashedLine(10f, 10f, 0f)
-
-        leftAxis.addLimitLine(limitHigh)
-        leftAxis.addLimitLine(limitLow)
-
-        // Deshabilitar el eje Y derecho
+        // Configurar eje Y derecho
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
-        // Configurar la leyenda
+        // Configurar leyenda
         chart.legend.textColor = Color.DKGRAY
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
@@ -125,7 +192,7 @@ class TemperaturaActivity : AppCompatActivity() {
         chart.legend.formLineWidth = 2f
         chart.legend.form = Legend.LegendForm.LINE
 
-        // Configurar el marcador
+        // Configurar marcador
         chart.setDrawMarkers(true)
         chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, "°C")
 
@@ -133,68 +200,84 @@ class TemperaturaActivity : AppCompatActivity() {
         chart.animateX(1500, Easing.EaseInOutQuart)
     }
 
+    private fun updateIdealTemperatureLines() {
+        val leftAxis = chartTemperatura.axisLeft
+        leftAxis.removeAllLimitLines()
+
+        // Solo añadir líneas si los valores son válidos
+        if (idealTempMin > 0 && idealTempMax > idealTempMin) {
+            // Línea de temperatura mínima ideal
+            val minLimitLine = LimitLine(idealTempMin, "Mín: ${idealTempMin.roundToInt()}°C")
+            minLimitLine.lineWidth = 1.5f
+            minLimitLine.lineColor = Color.rgb(76, 175, 80)
+            minLimitLine.textColor = Color.rgb(76, 175, 80)
+            minLimitLine.textSize = 10f
+            minLimitLine.enableDashedLine(10f, 10f, 0f)
+
+            // Línea de temperatura máxima ideal
+            val maxLimitLine = LimitLine(idealTempMax, "Máx: ${idealTempMax.roundToInt()}°C")
+            maxLimitLine.lineWidth = 1.5f
+            maxLimitLine.lineColor = Color.rgb(76, 175, 80)
+            maxLimitLine.textColor = Color.rgb(76, 175, 80)
+            maxLimitLine.textSize = 10f
+            maxLimitLine.enableDashedLine(10f, 10f, 0f)
+
+            leftAxis.addLimitLine(minLimitLine)
+            leftAxis.addLimitLine(maxLimitLine)
+        }
+
+        chartTemperatura.invalidate()
+    }
+
     private fun readFirebaseData() {
-        // Calcular la marca de tiempo de inicio (últimas 24 horas)
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.HOUR, -24)
-        val startTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+        // Remover listener anterior si existe
+        if (::sensorDataListener.isInitialized) {
+            sensorDataRef.child(currentPlantId).child("history").removeEventListener(sensorDataListener)
+        }
 
-        // Consultar datos dentro del rango de tiempo
-        val query = testRef.orderByChild("Hora").startAt(startTime)
+        if (currentPlantId.isEmpty()) return
 
-        query.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(querySnapshot: DataSnapshot) {
-                val entries = mutableListOf<Entry>()
-                val timestamps = mutableListOf<String>()
-                var maxTemperatura = Float.NEGATIVE_INFINITY
-                var minTemperatura = Float.POSITIVE_INFINITY
-                var sumTemperatura = 0f
-                var count = 0
+        sensorDataListener = sensorDataRef.child(currentPlantId).child("history")
+            .orderByChild("timestamp")
+            .limitToLast(24)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val entries = mutableListOf<Entry>()
+                    val timestamps = mutableListOf<String>()
+                    var maxTemperatura = Float.NEGATIVE_INFINITY
+                    var minTemperatura = Float.POSITIVE_INFINITY
 
-                val dataList = querySnapshot.children.toList()
+                    snapshot.children.forEachIndexed { index, dataSnapshot ->
+                        val sensorData = dataSnapshot.getValue(SensorData::class.java)
+                        sensorData?.let {
+                            val timestamp = it.Hora ?: ""
+                            timestamps.add(timestamp)
 
-                dataList.forEachIndexed { index, dataSnapshot ->
-                    val sensorData = dataSnapshot.getValue(SensorData::class.java)
-                    sensorData?.let {
-                        val timestamp = it.Hora ?: ""
-                        timestamps.add(timestamp)
-
-                        it.temperatura_ext?.let { tempValue ->
-                            entries.add(Entry(index.toFloat(), tempValue))
-                            if (tempValue > maxTemperatura) maxTemperatura = tempValue
-                            if (tempValue < minTemperatura) minTemperatura = tempValue
-                            sumTemperatura += tempValue
-                            count++
+                            it.temperatura_ext?.let { tempValue ->
+                                entries.add(Entry(index.toFloat(), tempValue))
+                                if (tempValue > maxTemperatura) maxTemperatura = tempValue
+                                if (tempValue < minTemperatura) minTemperatura = tempValue
+                            }
                         }
+                    }
+
+                    if (entries.isNotEmpty()) {
+                        updateChart(entries, timestamps)
+                        updateMinMax(maxTemperatura, minTemperatura)
+                        val prediccion = calcularPrediccion(entries)
+                        textViewPrediccionTemperaturaValue.text = String.format("%.1f°C", prediccion)
                     }
                 }
 
-                if (entries.isNotEmpty()) {
-                    updateChart(entries, timestamps)
-                    updateMinMax(maxTemperatura, minTemperatura)
-
-                    // Calcular predicción basada en la tendencia
-                    val prediccion = calcularPrediccion(entries)
-                    textViewPrediccionTemperaturaValue.text = String.format("%.1f°C", prediccion)
-                } else {
-                    // Limpiar gráfico y valores si no hay datos
-                    chartTemperatura.clear()
-                    textViewMaxTemperaturaValue.text = "--"
-                    textViewMinTemperaturaValue.text = "--"
-                    textViewPrediccionTemperaturaValue.text = "--"
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(this@TemperaturaActivity, "Error al leer datos", Toast.LENGTH_SHORT).show()
                 }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar error
-            }
-        })
+            })
     }
 
     private fun calcularPrediccion(entries: List<Entry>): Float {
         if (entries.size < 2) return entries.firstOrNull()?.y ?: 0f
 
-        // Calcular la pendiente de la línea de tendencia
         var sumX = 0f
         var sumY = 0f
         var sumXY = 0f
@@ -212,13 +295,12 @@ class TemperaturaActivity : AppCompatActivity() {
         val ultimoValor = entries.last().y
         val prediccion = ultimoValor + pendiente
 
-        // Asegurar que la predicción esté dentro de límites razonables
         return prediccion.coerceIn(0f, 50f)
     }
 
     private fun updateChart(entries: List<Entry>, timestamps: List<String>) {
         val dataSet = LineDataSet(entries, "Temperatura")
-        dataSet.color = Color.rgb(255, 87, 34) // Naranja
+        dataSet.color = Color.rgb(255, 87, 34)
         dataSet.setCircleColor(Color.rgb(255, 87, 34))
         dataSet.lineWidth = 2.5f
         dataSet.circleRadius = 4f
@@ -229,11 +311,10 @@ class TemperaturaActivity : AppCompatActivity() {
         dataSet.setDrawFilled(true)
         dataSet.fillColor = Color.rgb(255, 87, 34)
         dataSet.fillAlpha = 20
-        dataSet.setDrawValues(false) // Ocultar valores por defecto
+        dataSet.setDrawValues(false)
         dataSet.setDrawHorizontalHighlightIndicator(false)
         dataSet.setDrawHighlightIndicators(true)
 
-        // Formatear los valores
         dataSet.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return "${value.roundToInt()}°C"
@@ -245,7 +326,6 @@ class TemperaturaActivity : AppCompatActivity() {
         lineData.setValueTextSize(9f)
         chartTemperatura.data = lineData
 
-        // Configurar el formato del eje X
         val xAxis = chartTemperatura.xAxis
         val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
         xAxis.valueFormatter = object : IndexAxisValueFormatter() {
@@ -264,12 +344,22 @@ class TemperaturaActivity : AppCompatActivity() {
             }
         }
 
-        // Actualizar la gráfica
         chartTemperatura.invalidate()
     }
 
     private fun updateMinMax(max: Float, min: Float) {
         textViewMaxTemperaturaValue.text = String.format("%.1f°C", max)
         textViewMinTemperaturaValue.text = String.format("%.1f°C", min)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Limpiar listeners
+        if (::currentPlantListener.isInitialized) {
+            userRef.child("currentPlant").removeEventListener(currentPlantListener)
+        }
+        if (::sensorDataListener.isInitialized && currentPlantId.isNotEmpty()) {
+            sensorDataRef.child(currentPlantId).child("history").removeEventListener(sensorDataListener)
+        }
     }
 }
