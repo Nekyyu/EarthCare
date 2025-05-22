@@ -1,9 +1,11 @@
 package com.example.earthcare
 
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.earthcare.R
@@ -19,6 +21,7 @@ class PlantaGPT : AppCompatActivity() {
     private lateinit var userInput: EditText
     private lateinit var sendButton: Button
     private lateinit var responseText: TextView
+    private lateinit var buttonBackToMain: ImageView
 
     private val client = OkHttpClient()
 
@@ -32,11 +35,15 @@ class PlantaGPT : AppCompatActivity() {
         userInput = findViewById(R.id.userInput)
         sendButton = findViewById(R.id.sendButton)
         responseText = findViewById(R.id.responseText)
+        buttonBackToMain = findViewById(R.id.buttonBackToMain)
 
 
         sendButton.setOnClickListener {
             val prompt = userInput.text.toString()
             sendMessageToAzure(prompt)
+        }
+        buttonBackToMain.setOnClickListener {
+            startActivity(Intent(this, LuzActivity::class.java))
         }
     }
 
