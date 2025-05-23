@@ -7,7 +7,19 @@
     android:padding="16dp"
     android:background="@drawable/gradient_background">
 
-    <!-- Fondo decorativo -->
+    <!-- Nombre de la planta -->
+    <TextView
+        android:id="@+id/tvPlantName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nombre Planta"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
 
     <!-- Planta central -->
     <ImageView
@@ -97,7 +109,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Temperatura"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/white" />
     </LinearLayout>
@@ -141,29 +153,56 @@
             android:textColor="@color/white" />
     </LinearLayout>
 
-    <!-- Botones -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabChangePlant"
+    <!-- Grupo de botones flotantes en la esquina inferior derecha -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_change_plant"
+        android:orientation="horizontal"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:contentDescription="Cambiar planta"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Botón de edición como FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnEditPlant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_edit"
+            android:contentDescription="Editar planta"
+            app:backgroundTint="@color/primaryColor"
+            app:tint="@color/white"
+            android:elevation="8dp"
+            app:borderWidth="0dp"
+            android:scaleType="centerInside"/>
+
+        <!-- Botón de cambio de planta -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabChangePlant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_change_plant"
+            android:contentDescription="Cambiar planta"
+            app:backgroundTint="@color/primaryColor"
+            app:tint="@color/white"
+            android:elevation="8dp"
+            app:borderWidth="0dp"/>
+    </LinearLayout>
+
+    <!-- Botón de PlantaGPT -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/PlantaGPT"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        android:contentDescription="Abrir PlantaGPT"
+        android:src="@drawable/ic_chatbot"
         app:backgroundTint="@color/primaryColor"
         app:tint="@color/white"
         android:elevation="8dp"
-        app:borderWidth="0dp"/>
-
-    <ImageButton
-        android:id="@+id/PlantaGPT"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:contentDescription="Abrir PlantaGPT"
-        android:src="@drawable/ic_chatbot"
-        android:background="@drawable/circle_primary_bg"
-        android:elevation="8dp"
-        app:layout_constraintEnd_toStartOf="@id/fabChangePlant"
-        app:layout_constraintBottom_toBottomOf="@id/fabChangePlant"/>
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
