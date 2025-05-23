@@ -103,59 +103,32 @@ class LuzActivity : AppCompatActivity() {
         userRef.child("plants").child(currentPlantId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Get values with robust type handling
-                idealLuzMin = when {
-                    snapshot.hasChild("idealLightMin") -> when (val light = snapshot.child("idealLightMin").value) {
-                        is Long -> light.toFloat()
-                        is Double -> light.toFloat()
-                        is Int -> light.toFloat()
-                        is Float -> light
-                        else -> 5000f
-                    }
-                    snapshot.hasChild("idealLight") -> {
-                        val light = when (val lightValue = snapshot.child("idealLight").value) {
-                            is Long -> lightValue.toFloat()
-                            is Double -> lightValue.toFloat()
-                            is Int -> lightValue.toFloat()
-                            is Float -> lightValue
-                            else -> 10000f
-                        }
-                        // Special adjustment for low light values
-                        when {
-                            light < 2000f -> max(0f, light - 500f) // Smaller range for low values
-                            else -> light - 5000f // Normal range for other values
-                        }
-                    }
-                    else -> 5000f
+                idealLuzMin = when (val light = snapshot.child("idealLightMin").value) {
+                    is Long -> light.toFloat()
+                    is Double -> light.toFloat()
+                    is Int -> light.toFloat()
+                    is Float -> light
+                    else -> 0f // Valor por defecto si no se encuentra o no es válido
                 }
 
-                idealLuzMax = when {
-                    snapshot.hasChild("idealLightMax") -> when (val light = snapshot.child("idealLightMax").value) {
-                        is Long -> light.toFloat()
-                        is Double -> light.toFloat()
-                        is Int -> light.toFloat()
-                        is Float -> light
-                        else -> 15000f
-                    }
-                    snapshot.hasChild("idealLight") -> {
-                        val light = when (val lightValue = snapshot.child("idealLight").value) {
-                            is Long -> lightValue.toFloat()
-                            is Double -> lightValue.toFloat()
-                            is Int -> lightValue.toFloat()
-                            is Float -> lightValue
-                            else -> 10000f
-                        }
-                        // Special adjustment for low light values
-                        when {
-                            light < 2000f -> light + 500f // Smaller range for low values
-                            else -> light + 5000f // Normal range for other values
-                        }
-                    }
-                    else -> 15000f
+                idealLuzMax = when (val light = snapshot.child("idealLightMax").value) {
+                    is Long -> light.toFloat()
+                    is Double -> light.toFloat()
+                    is Int -> light.toFloat()
+                    is Float -> light
+                    else -> 20000f // Valor por defecto si no se encuentra o no es válido
                 }
 
-                // Ensure values are within reasonable limits
+                // Ensure min is not greater than max
+                if (idealLuzMin > idealLuzMax) {
+                    val temp = idealLuzMin
+                    idealLuzMin = idealLuzMax
+                    idealLuzMax = temp
+                }
+
+                // Ensure values are within reasonable limits (optional, depending on desired range)
                 idealLuzMin = max(0f, idealLuzMin)
-                idealLuzMax = min(20000f, idealLuzMax)
+                idealLuzMax = min(100000f, idealLuzMax) // Ajusta el límite superior si es necesario
 
                 updateIdealLightLines()
             }

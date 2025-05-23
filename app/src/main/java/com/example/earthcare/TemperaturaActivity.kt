@@ -101,40 +101,27 @@ class TemperaturaActivity : AppCompatActivity() {
         userRef.child("plants").child(currentPlantId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Obtener valores con manejo robusto de diferentes tipos y valores por defecto
-                idealTempMin = when {
-                    snapshot.hasChild("idealTempMin") -> when (val temp = snapshot.child("idealTempMin").value) {
-                        is Long -> temp.toFloat()
-                        is Double -> temp.toFloat()
-                        is Int -> temp.toFloat()
-                        is Float -> temp
-                        else -> 18f
-                    }
-                    snapshot.hasChild("idealTemp") -> when (val temp = snapshot.child("idealTemp").value) {
-                        is Long -> temp.toFloat() - 5f
-                        is Double -> temp.toFloat() - 5f
-                        is Int -> temp.toFloat() - 5f
-                        is Float -> temp - 5f
-                        else -> 18f
-                    }
-                    else -> 18f
+                idealTempMin = when (val temp = snapshot.child("idealTempMin").value) {
+                    is Long -> temp.toFloat()
+                    is Double -> temp.toFloat()
+                    is Int -> temp.toFloat()
+                    is Float -> temp
+                    else -> 18f // Valor por defecto si no se encuentra o no es válido
                 }
 
-                idealTempMax = when {
-                    snapshot.hasChild("idealTempMax") -> when (val temp = snapshot.child("idealTempMax").value) {
-                        is Long -> temp.toFloat()
-                        is Double -> temp.toFloat()
-                        is Int -> temp.toFloat()
-                        is Float -> temp
-                        else -> 25f
-                    }
-                    snapshot.hasChild("idealTemp") -> when (val temp = snapshot.child("idealTemp").value) {
-                        is Long -> temp.toFloat() + 5f
-                        is Double -> temp.toFloat() + 5f
-                        is Int -> temp.toFloat() + 5f
-                        is Float -> temp + 5f
-                        else -> 25f
-                    }
-                    else -> 25f
+                idealTempMax = when (val temp = snapshot.child("idealTempMax").value) {
+                    is Long -> temp.toFloat()
+                    is Double -> temp.toFloat()
+                    is Int -> temp.toFloat()
+                    is Float -> temp
+                    else -> 25f // Valor por defecto si no se encuentra o no es válido
+                }
+
+                // Asegurar que el mínimo no sea mayor que el máximo
+                if (idealTempMin > idealTempMax) {
+                    val temp = idealTempMin
+                    idealTempMin = idealTempMax
+                    idealTempMax = temp
                 }
 
                 updateIdealTemperatureLines()

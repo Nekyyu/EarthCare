@@ -48,43 +48,103 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Luz recomendada (lux):"
+            android:text="Rango de luz recomendado (lux):"
             android:layout_marginBottom="8dp"/>
 
-        <EditText
-            android:id="@+id/etLight"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:layout_marginBottom="16dp"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            <EditText
+                android:id="@+id/etLightMin"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="Mínimo"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" - "
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"/>
+            <EditText
+                android:id="@+id/etLightMax"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="Máximo"/>
+        </LinearLayout>
 
         <!-- Temperatura recomendada -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Temperatura recomendada (°C):"
+            android:text="Rango de temperatura recomendado (°C):"
             android:layout_marginBottom="8dp"/>
 
-        <EditText
-            android:id="@+id/etTemperature"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
-            android:layout_marginBottom="16dp"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            <EditText
+                android:id="@+id/etTemperatureMin"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="numberDecimal"
+                android:hint="Mínimo"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" - "
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"/>
+            <EditText
+                android:id="@+id/etTemperatureMax"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="numberDecimal"
+                android:hint="Máximo"/>
+        </LinearLayout>
 
         <!-- Humedad recomendada -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Humedad recomendada (%):"
+            android:text="Rango de humedad recomendado (%):"
             android:layout_marginBottom="8dp"/>
 
-        <EditText
-            android:id="@+id/etHumidity"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:layout_marginBottom="16dp"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            <EditText
+                android:id="@+id/etHumidityMin"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="Mínimo"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" - "
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"/>
+            <EditText
+                android:id="@+id/etHumidityMax"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="Máximo"/>
+        </LinearLayout>
 
         <Button
             android:id="@+id/btnSavePlant"
