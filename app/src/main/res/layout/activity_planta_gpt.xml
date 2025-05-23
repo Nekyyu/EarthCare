@@ -1,41 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:id="@+id/chatLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FFFFFF">
+    android:background="#FAFAFA"
+    android:padding="16dp">
 
+    <!-- Respuesta del bot en una tarjeta estilizada -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp"
+        card_view:cardElevation="4dp"
+        card_view:cardCornerRadius="8dp"
+        card_view:cardBackgroundColor="#FFFFFF">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/responseText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Respuesta de PlantaGPT..."
+                android:textColor="#212121"
+                android:textSize="16sp"
+                android:lineSpacingExtra="6dp" />
+        </ScrollView>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Entrada del usuario -->
     <EditText
-        android:textColor="@color/black"
         android:id="@+id/userInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Escribe tu pregunta aquí..."
         android:inputType="textMultiLine"
-        android:lines="3"
-        android:gravity="top"
+        android:minLines="2"
+        android:maxLines="5"
+        android:gravity="top|start"
         android:background="@android:drawable/edit_text"
-        android:padding="10dp" />
+        android:padding="12dp"
+        android:textColor="#000000"
+        android:textSize="15sp" />
 
+    <!-- Botón para enviar -->
     <Button
         android:id="@+id/sendButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Enviar"
-        android:layout_marginTop="12dp" />
-
-    <TextView
-        android:id="@+id/responseText"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="16dp"
-        android:background="#F0F0F0"
-        android:text="Respuesta del chatbot..."
-        android:textSize="16sp"
-        android:padding="12dp"
-        android:scrollbars="vertical"
-        android:textColor="@color/black"/>
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#4CAF50"
+        android:layout_marginTop="12dp"
+        android:padding="10dp" />
 </LinearLayout>
