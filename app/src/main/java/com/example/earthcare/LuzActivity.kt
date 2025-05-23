@@ -24,6 +24,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Log
 
 class LuzActivity : AppCompatActivity() {
 
@@ -222,49 +223,130 @@ class LuzActivity : AppCompatActivity() {
     }
 
     private fun readFirebaseData() {
-        // Remove previous listener if exists
+        // Remover previous listener if exists
         if (::sensorDataListener.isInitialized) {
-            sensorDataRef.child(currentPlantId).child("history").removeEventListener(sensorDataListener)
+            // Determinar la referencia correcta para remover el listener
+            val currentUser = auth.currentUser
+            val isTargetUserAndPlant = currentUser != null &&
+                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                       // Asumiendo que tienes acceso al nombre de la planta aquí o necesitas obtenerlo
+                                       // Por ahora, usaremos solo el currentPlantId y el ID de usuario como indicador
+                                       // Esto puede necesitar ajuste si el nombre de la planta es crucial para la decisión de lectura
+                                       // Para simplificar, nos basaremos en que si es el usuario objetivo y tenemos un currentPlantId, asumimos que es vaporub si el ID coincide con el esperado para vaporub.
+                                       // **NOTA IMPORTANTE:** Si el ID de la planta 'vaporub' es dinámico, esta lógica necesitará ajustarse para obtener el nombre de la planta.
+                                       // Dado el contexto anterior, asumiré que currentPlantId se refiere a vaporub cuando isTargetUserAndPlant es true.
+                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+
+            val refToDetach = if (isTargetUserAndPlant) {
+                // Apuntar al nodo 'test' para los datos reales
+                database.getReference("test")
+            } else {
+                 sensorDataRef.child(currentPlantId).child("history")
+            }
+             refToDetach.removeEventListener(sensorDataListener)
         }
 
         if (currentPlantId.isEmpty()) return
 
-        sensorDataListener = sensorDataRef.child(currentPlantId).child("history")
-            .orderByChild("timestamp")
-            .limitToLast(24)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val entries = mutableListOf<Entry>()
-                    val timestamps = mutableListOf<String>()
-                    var maxLuz = Float.NEGATIVE_INFINITY
-                    var minLuz = Float.POSITIVE_INFINITY
+        val currentUser = auth.currentUser
+        val isTargetUserAndPlant = currentUser != null &&
+                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                   // Misma nota importante sobre la identificación de la planta 'vaporub'
+                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
 
-                    snapshot.children.forEachIndexed { index, dataSnapshot ->
-                        val sensorData = dataSnapshot.getValue(SensorData::class.java)
-                        sensorData?.let {
-                            val timestamp = it.Hora ?: ""
-                            timestamps.add(timestamp)
+        val dataQuery = if (isTargetUserAndPlant) {
+            // Apuntar al nodo 'test' y ordenar por clave (timestamp string) y limitar a 24
+            database.getReference("test").orderByKey().limitToLast(24)
+        } else {
+            // Referencia a la historia de la planta dentro del usuario (sin cambios)
+            sensorDataRef.child(currentPlantId).child("history")
+                .orderByChild("timestamp")
+                .limitToLast(24)
+        }
 
-                            it.luz?.let { luzValue ->
-                                entries.add(Entry(index.toFloat(), luzValue))
-                                if (luzValue > maxLuz) maxLuz = luzValue
-                                if (luzValue < minLuz) minLuz = luzValue
-                            }
+        sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val entries = mutableListOf<Entry>()
+                val timestamps = mutableListOf<String>()
+                var maxLuz = Float.NEGATIVE_INFINITY
+                var minLuz = Float.POSITIVE_INFINITY
+
+                snapshot.children.forEachIndexed { index, dataSnapshot ->
+                     // Para datos en 'test', la estructura es diferente, necesitamos acceder a los valores dentro del snapshot hijo
+                    val sensorData = if (isTargetUserAndPlant) {
+                        // Si estamos leyendo de 'test', creamos un objeto SensorData manualmente
+                        // Esto asume que la estructura dentro de cada timestamp key es plana y coincide con los campos de SensorData
+                        try {
+                            SensorData(
+                                Hora = dataSnapshot.child("Hora").getValue(String::class.java),
+                                humdedad_ext = dataSnapshot.child("humdedad_ext").getValue(Float::class.java) ?: dataSnapshot.child("humdedad_ext").getValue(Long::class.java)?.toFloat(),
+                                humedad_suelo = dataSnapshot.child("humedad_suelo").getValue(Float::class.java) ?: dataSnapshot.child("humedad_suelo").getValue(Long::class.java)?.toFloat(),
+                                luz = dataSnapshot.child("luz").getValue(Float::class.java) ?: dataSnapshot.child("luz").getValue(Long::class.java)?.toFloat(),
+                                porcentaje_humedad_suelo = dataSnapshot.child("porcentaje_humedad_suelo").getValue(Float::class.java) ?: dataSnapshot.child("porcentaje_humedad_suelo").getValue(Long::class.java)?.toFloat(),
+                                temperatura_ext = dataSnapshot.child("temperatura_ext").getValue(Float::class.java) ?: dataSnapshot.child("temperatura_ext").getValue(Long::class.java)?.toFloat(),
+                                timestamp = dataSnapshot.child("timestamp").getValue(Long::class.java)
+                            )
+                        } catch (e: Exception) {
+                             Log.e("LuzActivity", "Error deserializing test data for key ${dataSnapshot.key}: ${e.message}")
+                             null
+                        }
+                    } else {
+                         // Si estamos leyendo de la historia de la planta, usamos getValue directamente
+                        dataSnapshot.getValue(SensorData::class.java)
+                    }
+
+                    sensorData?.let {
+                        // Usar el key del snapshot como timestamp para ordenar en la gráfica si leemos de test
+                        val xValue = if (isTargetUserAndPlant) {
+                            // Si leemos de test, usar el índice para el eje X y la clave como etiqueta
+                            index.toFloat()
+                        } else {
+                            // Si leemos de la historia de la planta, usar el timestamp numérico si está disponible
+                            it.timestamp?.toFloat() ?: index.toFloat() // Usar timestamp si existe, si no, usar índice
+                        }
+
+                        val timestampLabel = if (isTargetUserAndPlant) {
+                            // Si leemos de test, usar la clave como etiqueta (formato yyyy-MM-dd_HH-mm)
+                             dataSnapshot.key ?: ""
+                        } else {
+                            // Si leemos de la historia de la planta, usar el campo Hora o formatear el timestamp
+                            it.Hora ?: it.timestamp?.let { ts -> SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(ts)) } ?: ""
+                        }
+
+                        if (timestampLabel.isNotEmpty()) {
+                            timestamps.add(timestampLabel)
+                        } else {
+                            timestamps.add(index.toString()) // Fallback to index if no timestamp label
+                        }
+
+                        it.luz?.let { luzValue ->
+                            // Asegurarse de usar xValue para añadir al gráfico
+                            entries.add(Entry(xValue, luzValue))
+                            if (luzValue > maxLuz) maxLuz = luzValue
+                            if (luzValue < minLuz) minLuz = luzValue
                         }
                     }
-
-                    if (entries.isNotEmpty()) {
-                        updateChart(entries, timestamps)
-                        updateMinMax(maxLuz, minLuz)
-                        val prediccion = calcularPrediccion(entries)
-                        textViewPrediccionLuzValue.text = String.format("%.1f lux", prediccion)
-                    }
                 }
 
-                override fun onCancelled(error: DatabaseError) {
-                    Toast.makeText(this@LuzActivity, "Error reading data", Toast.LENGTH_SHORT).show()
+                if (entries.isNotEmpty()) {
+                    updateChart(entries, timestamps)
+                    updateMinMax(maxLuz, minLuz)
+                    // La predicción puede necesitar ajustarse si la escala de tiempo cambia significativamente
+                    // Por ahora, mantenemos la lógica existente
+                    val prediccion = calcularPrediccion(entries)
+                    textViewPrediccionLuzValue.text = String.format("%.1f lux", prediccion)
+                } else {
+                     // Limpiar la gráfica si no hay datos
+                    updateChart(mutableListOf(), mutableListOf())
+                     updateMinMax(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)
+                     textViewPrediccionLuzValue.text = "N/A"
                 }
-            })
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@LuzActivity, "Error reading data", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun calcularPrediccion(entries: List<Entry>): Float {

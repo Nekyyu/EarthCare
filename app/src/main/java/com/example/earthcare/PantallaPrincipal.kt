@@ -487,7 +487,7 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun initializeSensorDataForPlant(plantId: String) {
-        val plantDataRef = sensorDataRef.child(plantId)
+        val plantDataRef = plantsRef.child(plantId).child("sensorData")
 
         plantDataRef.child("history").addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -503,7 +503,7 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun generateFakeHistory(plantId: String) {
-        val historyRef = sensorDataRef.child(plantId).child("history")
+        val historyRef = plantsRef.child(plantId).child("sensorData").child("history")
         val currentPlant = currentUserPlants.find { it.id == plantId }
 
         currentPlant?.let { plant ->
@@ -535,90 +535,103 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun readLastSensorData() {
+        Log.d("SensorData", "readLastSensorData called for plant ID: $currentPlantId")
+
         // Remover listener anterior si existe
         sensorDataListener?.let { listener ->
             currentPlantId?.let { plantId ->
-                try {
-                    sensorDataRef.child(plantId).child("history").removeEventListener(listener)
-                } catch (e: Exception) {
-                    Log.e("SensorData", "Error removing listener: ${e.message}")
+                val currentUser = auth.currentUser
+                val isTargetUserAndPlant = currentUser != null &&
+                                         currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                         currentUserPlants.find { it.id == plantId }?.name == "vaporub"
+
+                Log.d("SensorData", "isTargetUserAndPlant: $isTargetUserAndPlant")
+
+                val refToDetach = if (isTargetUserAndPlant) {
+                    // Apuntar al nodo 'test' para los datos reales
+                    database.getReference("test")
+                } else {
+                    database.getReference("sensorData")
+                        .child(currentUser?.uid ?: "")
+                        .child(plantId)
+                        .child("history")
                 }
+                refToDetach.removeEventListener(listener)
             }
         }
 
         currentPlantId?.let { plantId ->
-            sensorDataListener = object : ValueEventListener {
+            val currentUser = auth.currentUser
+            val isTargetUserAndPlant = currentUser != null &&
+                                     currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                     currentUserPlants.find { it.id == plantId }?.name == "vaporub"
+
+            Log.d("SensorData", "isTargetUserAndPlant (after detach check): $isTargetUserAndPlant")
+
+            val dataQuery = if (isTargetUserAndPlant) {
+                // Apuntar al nodo 'test' y ordenar por clave (timestamp string)
+                database.getReference("test").orderByKey().limitToLast(1)
+            } else {
+                // Referencia a la historia de la planta dentro del usuario (sin cambios)
+                database.getReference("sensorData")
+                    .child(currentUser?.uid ?: "")
+                    .child(plantId)
+                    .child("history")
+                    .orderByChild("timestamp") // Asegurarse de ordenar por timestamp numérico si existe
+                    .limitToLast(1)
+            }
+
+            Log.d("SensorData", "Using database query: ${dataQuery.toString()}")
+
+            sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    try {
-                        // Ordenar por timestamp y obtener el último registro
-                        val sortedData = snapshot.children.sortedByDescending {
-                            it.child("timestamp").getValue(Long::class.java) ?: 0L
+                    Log.d("SensorData", "Data received from: ${snapshot.ref.toString()}")
+                    Log.d("SensorData", "Snapshot exists: ${snapshot.exists()}")
+                    Log.d("SensorData", "Snapshot children count: ${snapshot.childrenCount}")
+
+                    if (snapshot.exists()) {
+                        // Para datos en 'test', obtenemos el primer (y único) hijo del snapshot limitToLast(1)
+                        val latestDataSnapshot = if (isTargetUserAndPlant) {
+                            snapshot.children.firstOrNull()
+                        } else {
+                            // Para la historia de la planta, ya está ordenado y limitado
+                            snapshot.children.firstOrNull()
                         }
 
-                        sortedData.firstOrNull()?.let { lastEntry ->
-                            // Manejar diferentes formatos numéricos
-                            val luz = when (val luzValue = lastEntry.child("luz").value) {
-                                is Long -> luzValue.toFloat()
-                                is Double -> luzValue.toFloat()
-                                is Int -> luzValue.toFloat()
-                                else -> 0f
+                        latestDataSnapshot?.let { dataSnapshot ->
+                            Log.d("SensorData", "Processing latest entry key: ${dataSnapshot.key}")
+                            Log.d("SensorData", "Raw latest entry data: ${dataSnapshot.value}")
+                            
+                            // Ahora intentamos deserializar usando SensorData
+                            val data = dataSnapshot.getValue(SensorData::class.java)
+                            
+                            if (data != null) {
+                                Log.d("SensorData", "Successfully deserialized data: $data")
+                                updateSensorData(data)
+                            } else {
+                                Log.e("SensorData", "Failed to deserialize latest data for key: ${dataSnapshot.key}")
+                                // Puedes añadir aquí un manejo de error en la UI si es necesario
                             }
-
-                            val temp = when (val tempValue = lastEntry.child("temperatura_ext").value) {
-                                is Long -> tempValue.toFloat()
-                                is Double -> tempValue.toFloat()
-                                is Int -> tempValue.toFloat()
-                                else -> 0f
-                            }
-
-                            val hum = when (val humValue = lastEntry.child("humdedad_ext").value) {
-                                is Long -> humValue.toFloat()
-                                is Double -> humValue.toFloat()
-                                is Int -> humValue.toFloat()
-                                else -> 0f
-                            }
-
-                            runOnUiThread {
-                                updateSensorUI(luz, temp, hum)
-                            }
+                        } ?: run {
+                             Log.d("SensorData", "Snapshot exists but no children found after query.")
                         }
-                    } catch (e: Exception) {
-                        Log.e("SensorData", "Error processing data: ${e.message}")
-                        runOnUiThread {
-                            Toast.makeText(this@PantallaPrincipal, "Error al procesar datos", Toast.LENGTH_SHORT).show()
-                        }
+
+                    } else {
+                         Log.d("SensorData", "Snapshot does not exist.")
                     }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    Log.e("SensorData", "Error reading history: ${error.message}")
-                    runOnUiThread {
-                        Toast.makeText(this@PantallaPrincipal, "Error al leer historial", Toast.LENGTH_SHORT).show()
-                    }
+                    Log.e("SensorData", "Error reading sensor data: ${error.message}")
                 }
-            }
-
-            // Leer el historial ordenado por timestamp descendente
-            try {
-                sensorDataRef.child(plantId).child("history")
-                    .orderByChild("timestamp")
-                    .limitToLast(1)
-                    .addValueEventListener(sensorDataListener!!)
-            } catch (e: Exception) {
-                Log.e("SensorData", "Error adding listener: ${e.message}")
-            }
-        } ?: run {
-            // Si no hay planta seleccionada
-            runOnUiThread {
-                updateSensorUI(0f, 0f, 0f)
-            }
+            })
         }
     }
 
     private fun deletePlant(plant: Plant) {
         plant.id?.let { plantId ->
             // Eliminar datos del sensor asociados a la planta
-            sensorDataRef.child(plantId).removeValue()
+            plantsRef.child(plantId).child("sensorData").removeValue()
 
             // Eliminar la planta de la base de datos
             plantsRef.child(plantId).removeValue()
@@ -638,6 +651,37 @@ class PantallaPrincipal : AppCompatActivity() {
                 .addOnFailureListener {
                     Toast.makeText(this, "Error al eliminar la planta: ${plant.name}", Toast.LENGTH_SHORT).show()
                 }
+        }
+    }
+
+    private fun updateSensorData(data: SensorData) {
+        runOnUiThread {
+            // Actualizar los valores de los sensores
+            data.luz?.let { luz ->
+                textViewUltimoDatoLuz.text = String.format("%.1f lux", luz)
+                imageViewIconLuz.alpha = if (luz > 0f) 1f else 0.5f
+            }
+            
+            data.temperatura_ext?.let { temp ->
+                textViewUltimoDatoTemperatura.text = String.format("%.1f°C", temp)
+                imageViewIconTemperatura.setColorFilter(
+                    when {
+                        temp < 15 -> ContextCompat.getColor(this, R.color.coolTemp)
+                        temp > 30 -> ContextCompat.getColor(this, R.color.hotTemp)
+                        else -> ContextCompat.getColor(this, R.color.normalTemp)
+                    }
+                )
+            }
+            
+            data.humdedad_ext?.let { hum ->
+                textViewUltimoDatoHumedad.text = String.format("%.1f%%", hum)
+                imageViewIconHumedad.alpha = if (hum > 0f) 1f else 0.5f
+            }
+
+            // Actualizar la hora si está disponible
+            data.Hora?.let { hora ->
+                // No se actualiza la interfaz de usuario directamente desde el sensorData
+            }
         }
     }
 
