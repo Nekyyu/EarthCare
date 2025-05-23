@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@drawable/gradient_background"
+    android:background="@color/white"
     tools:context=".HumedadActivity">
 
     <TextView
@@ -52,7 +52,7 @@
         android:orientation="vertical"
         android:layout_marginTop="24dp"
         android:padding="16dp"
-        android:background="@drawable/rounded_corners_background"
+        android:background="@drawable/gradient_background"
         app:layout_constraintTop_toBottomOf="@id/chartHumedadExterior"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -110,6 +110,16 @@
             android:text="--"
             android:textColor="@android:color/black"
             android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/textViewUltimoDatoHumedadConFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Último dato: -- (fecha)"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+
     </LinearLayout>
 
     <ImageButton

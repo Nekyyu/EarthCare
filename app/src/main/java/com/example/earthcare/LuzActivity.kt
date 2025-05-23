@@ -32,6 +32,7 @@ class LuzActivity : AppCompatActivity() {
     private lateinit var textViewMaxLuzValue: TextView
     private lateinit var textViewMinLuzValue: TextView
     private lateinit var textViewPrediccionLuzValue: TextView
+    private lateinit var textViewUltimoDatoLuzConFecha: TextView
     private lateinit var imageButtonBackLuz: ImageButton
 
     private lateinit var auth: FirebaseAuth
@@ -41,6 +42,7 @@ class LuzActivity : AppCompatActivity() {
     private var currentPlantId: String = ""
     private var idealLuzMin: Float = 5000f
     private var idealLuzMax: Float = 15000f
+    private lateinit var currentUserPlants: MutableList<Plant>
 
     private lateinit var currentPlantListener: ValueEventListener
     private lateinit var sensorDataListener: ValueEventListener
@@ -54,6 +56,7 @@ class LuzActivity : AppCompatActivity() {
         textViewMaxLuzValue = findViewById(R.id.textViewMaxLuzValue)
         textViewMinLuzValue = findViewById(R.id.textViewMinLuzValue)
         textViewPrediccionLuzValue = findViewById(R.id.textViewPrediccionLuzValue)
+        textViewUltimoDatoLuzConFecha = findViewById(R.id.textViewUltimoDatoLuzConFecha)
         imageButtonBackLuz = findViewById(R.id.imageButtonBackLuz)
 
         // Initialize Firebase
@@ -66,16 +69,37 @@ class LuzActivity : AppCompatActivity() {
 
         userRef = database.getReference("users").child(currentUser.uid)
         sensorDataRef = database.getReference("sensorData").child(currentUser.uid)
+        currentUserPlants = mutableListOf()
 
         // Configure chart
         configureChart(chartLuz)
 
         // Set up listeners
         setupFirebaseListeners()
+        loadUserPlants()
 
         imageButtonBackLuz.setOnClickListener {
             onBackPressed()
         }
+    }
+
+    private fun loadUserPlants() {
+        userRef.child("plants").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                currentUserPlants.clear()
+                for (plantSnapshot in snapshot.children) {
+                    val plant = plantSnapshot.getValue(Plant::class.java)
+                    plant?.let {
+                        it.id = plantSnapshot.key ?: ""
+                        currentUserPlants.add(it)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@LuzActivity, "Error al cargar plantas", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun setupFirebaseListeners() {
@@ -152,7 +176,7 @@ class LuzActivity : AppCompatActivity() {
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(false)
         xAxis.setDrawAxisLine(false)
-        xAxis.textColor = Color.parseColor("#FFFFFF")
+        xAxis.textColor = Color.parseColor("#000000")
         xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
@@ -161,7 +185,7 @@ class LuzActivity : AppCompatActivity() {
 
         // Configure left Y axis
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.parseColor("#FFFFFF")
+        leftAxis.textColor = Color.parseColor("#000000")
         leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
         leftAxis.gridColor = Color.parseColor("#CCCCCC")
@@ -176,7 +200,7 @@ class LuzActivity : AppCompatActivity() {
         rightAxis.isEnabled = false
 
         // Configure legend
-        chart.legend.textColor = Color.parseColor("#FFFFFF")
+        chart.legend.textColor = Color.parseColor("#000000")
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
@@ -223,45 +247,46 @@ class LuzActivity : AppCompatActivity() {
     }
 
     private fun readFirebaseData() {
-        // Remover previous listener if exists
+        // Remover listener anterior si existe
         if (::sensorDataListener.isInitialized) {
-            // Determinar la referencia correcta para remover el listener
             val currentUser = auth.currentUser
+            val currentPlant = currentUserPlants.find { it.id == currentPlantId }
             val isTargetUserAndPlant = currentUser != null &&
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                       // Asumiendo que tienes acceso al nombre de la planta aquí o necesitas obtenerlo
-                                       // Por ahora, usaremos solo el currentPlantId y el ID de usuario como indicador
-                                       // Esto puede necesitar ajuste si el nombre de la planta es crucial para la decisión de lectura
-                                       // Para simplificar, nos basaremos en que si es el usuario objetivo y tenemos un currentPlantId, asumimos que es vaporub si el ID coincide con el esperado para vaporub.
-                                       // **NOTA IMPORTANTE:** Si el ID de la planta 'vaporub' es dinámico, esta lógica necesitará ajustarse para obtener el nombre de la planta.
-                                       // Dado el contexto anterior, asumiré que currentPlantId se refiere a vaporub cuando isTargetUserAndPlant es true.
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                     currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                     currentPlant?.name?.lowercase() == "vaporub"
 
             val refToDetach = if (isTargetUserAndPlant) {
-                // Apuntar al nodo 'test' para los datos reales
                 database.getReference("test")
             } else {
-                 sensorDataRef.child(currentPlantId).child("history")
+                sensorDataRef.child(currentPlantId).child("history")
             }
-             refToDetach.removeEventListener(sensorDataListener)
+            refToDetach.removeEventListener(sensorDataListener)
         }
 
         if (currentPlantId.isEmpty()) return
 
         val currentUser = auth.currentUser
+        val currentPlant = currentUserPlants.find { it.id == currentPlantId }
         val isTargetUserAndPlant = currentUser != null &&
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                   // Misma nota importante sobre la identificación de la planta 'vaporub'
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                 currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                 currentPlant?.name?.lowercase() == "vaporub"
 
         val dataQuery = if (isTargetUserAndPlant) {
-            // Apuntar al nodo 'test' y ordenar por clave (timestamp string) y limitar a 24
             database.getReference("test").orderByKey().limitToLast(24)
         } else {
-            // Referencia a la historia de la planta dentro del usuario (sin cambios)
-            sensorDataRef.child(currentPlantId).child("history")
-                .orderByChild("timestamp")
-                .limitToLast(24)
+            // Generar datos ficticios para otras plantas
+            val fakeData = generateFakeHistory(24)
+            val fakeDataRef = sensorDataRef.child(currentPlantId).child("history")
+            
+            // Limpiar datos anteriores
+            fakeDataRef.removeValue().addOnCompleteListener {
+                // Guardar nuevos datos ficticios
+                fakeData.forEach { (timestamp, data) ->
+                    fakeDataRef.child(timestamp.toString()).setValue(data)
+                }
+            }
+            
+            fakeDataRef.orderByChild("timestamp").limitToLast(24)
         }
 
         sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
@@ -270,6 +295,8 @@ class LuzActivity : AppCompatActivity() {
                 val timestamps = mutableListOf<String>()
                 var maxLuz = Float.NEGATIVE_INFINITY
                 var minLuz = Float.POSITIVE_INFINITY
+                var lastLuz: Float? = null
+                var lastTimestampLabel: String = ""
 
                 snapshot.children.forEachIndexed { index, dataSnapshot ->
                      // Para datos en 'test', la estructura es diferente, necesitamos acceder a los valores dentro del snapshot hijo
@@ -324,6 +351,8 @@ class LuzActivity : AppCompatActivity() {
                             entries.add(Entry(xValue, luzValue))
                             if (luzValue > maxLuz) maxLuz = luzValue
                             if (luzValue < minLuz) minLuz = luzValue
+                            lastLuz = luzValue
+                            lastTimestampLabel = timestampLabel
                         }
                     }
                 }
@@ -335,11 +364,20 @@ class LuzActivity : AppCompatActivity() {
                     // Por ahora, mantenemos la lógica existente
                     val prediccion = calcularPrediccion(entries)
                     textViewPrediccionLuzValue.text = String.format("%.1f lux", prediccion)
+
+                     // Actualizar el TextView del último dato con fecha
+                    lastLuz?.let { luz ->
+                         textViewUltimoDatoLuzConFecha.text = String.format("Último dato: %.1f lux (%s)", luz, lastTimestampLabel)
+                    } ?: run { 
+                         textViewUltimoDatoLuzConFecha.text = "Último dato: -- (fecha)"
+                    }
+
                 } else {
                      // Limpiar la gráfica si no hay datos
                     updateChart(mutableListOf(), mutableListOf())
                      updateMinMax(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)
                      textViewPrediccionLuzValue.text = "N/A"
+                     textViewUltimoDatoLuzConFecha.text = "Último dato: -- (fecha)"
                 }
             }
 
@@ -412,6 +450,29 @@ class LuzActivity : AppCompatActivity() {
     private fun updateMinMax(max: Float, min: Float) {
         textViewMaxLuzValue.text = String.format("%.1f lux", max)
         textViewMinLuzValue.text = String.format("%.1f lux", min)
+    }
+
+    private fun generateFakeHistory(count: Int): Map<Long, SensorData> {
+        val random = Random()
+        val now = System.currentTimeMillis()
+        val data = mutableMapOf<Long, SensorData>()
+        
+        for (i in 0 until count) {
+            val timestamp = now - (count - i) * 3600000 // Cada hora
+            val luz = random.nextFloat() * 10000 + 5000 // Entre 5000 y 15000 lux
+            
+            data[timestamp] = SensorData(
+                Hora = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp)),
+                humdedad_ext = random.nextFloat() * 30 + 40,
+                humedad_suelo = random.nextFloat() * 30 + 40,
+                luz = luz,
+                porcentaje_humedad_suelo = random.nextFloat() * 30 + 40,
+                temperatura_ext = random.nextFloat() * 10 + 20,
+                timestamp = timestamp
+            )
+        }
+        
+        return data
     }
 
     override fun onDestroy() {

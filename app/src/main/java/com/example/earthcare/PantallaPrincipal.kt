@@ -296,8 +296,7 @@ class PantallaPrincipal : AppCompatActivity() {
             readLastSensorData()
             dialog.dismiss()
         }, { plantToEdit ->
-            // TODO: Implementar lógica para editar planta
-            Toast.makeText(this, "Editar ${plantToEdit.name}", Toast.LENGTH_SHORT).show()
+            // Implementar lógica para editar planta
             showEditPlantDialog(plantToEdit)
             dialog.dismiss()
         }, { plantToDelete ->
@@ -379,91 +378,6 @@ class PantallaPrincipal : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showEditPlantDialog(plant: Plant) {
-        val dialogBinding = DialogPlantQuestionnaireBinding.inflate(layoutInflater)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogBinding.root)
-            .setTitle("Editar Planta: ${plant.name}")
-            .setCancelable(false)
-            .create()
-
-        val plantTypes = arrayOf("Vegetal", "Fruta", "Hierba", "Flor", "Árbol", "Cactus/Suculenta", "Otro")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, plantTypes)
-        dialogBinding.spinnerPlantType.adapter = adapter
-
-        // Precargar datos de la planta
-        dialogBinding.etPlantName.setText(plant.name)
-        dialogBinding.etLightMin.setText(plant.idealLightMin.toString())
-        dialogBinding.etLightMax.setText(plant.idealLightMax.toString())
-        dialogBinding.etTemperatureMin.setText(plant.idealTempMin.toString())
-        dialogBinding.etTemperatureMax.setText(plant.idealTempMax.toString())
-        dialogBinding.etHumidityMin.setText(plant.idealHumidityMin.toString())
-        dialogBinding.etHumidityMax.setText(plant.idealHumidityMax.toString())
-
-        // Seleccionar el tipo de planta correcto en el Spinner (esto puede ser más complejo si los tipos no coinciden exactamente con imageRes)
-        val imageResToPlantType = mapOf(
-            "tomato" to "Vegetal",
-            "pepper" to "Fruta",
-            "lettuce" to "Hierba"
-        )
-        val plantTypeFromImage = imageResToPlantType[plant.imageRes] ?: "Otro"
-        val spinnerPosition = plantTypes.indexOf(plantTypeFromImage)
-        if (spinnerPosition >= 0) {
-            dialogBinding.spinnerPlantType.setSelection(spinnerPosition)
-        }
-
-        dialogBinding.btnSavePlant.setOnClickListener {
-            val plantType = dialogBinding.spinnerPlantType.selectedItem.toString()
-            val customName = dialogBinding.etPlantName.text.toString().trim()
-            val lightMinText = dialogBinding.etLightMin.text.toString()
-            val lightMaxText = dialogBinding.etLightMax.text.toString()
-            val tempMinText = dialogBinding.etTemperatureMin.text.toString()
-            val tempMaxText = dialogBinding.etTemperatureMax.text.toString()
-            val humidityMinText = dialogBinding.etHumidityMin.text.toString()
-            val humidityMaxText = dialogBinding.etHumidityMax.text.toString()
-
-            if (customName.isEmpty() || lightMinText.isEmpty() || lightMaxText.isEmpty() || tempMinText.isEmpty() || tempMaxText.isEmpty() || humidityMinText.isEmpty() || humidityMaxText.isEmpty()) {
-                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // Crear un mapa con los datos actualizados
-            val updatedPlantData = hashMapOf<String, Any>(
-                "name" to customName,
-                "requirements" to "", // requirements se generará en el adapter ahora
-                "imageRes" to when (plantType) {
-                    "Vegetal" -> "tomato"
-                    "Fruta" -> "pepper"
-                    "Hierba" -> "lettuce"
-                    else -> "default"
-                },
-                "idealTempMin" to tempMinText.toInt(),
-                "idealTempMax" to tempMaxText.toInt(),
-                "idealHumidityMin" to humidityMinText.toInt(),
-                "idealHumidityMax" to humidityMaxText.toInt(),
-                "idealLightMin" to lightMinText.toInt(),
-                "idealLightMax" to lightMaxText.toInt()
-            )
-
-            // Actualizar la planta en Firebase
-            plant.id?.let { plantId ->
-                plantsRef.child(plantId).updateChildren(updatedPlantData)
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "Planta actualizada: $customName", Toast.LENGTH_SHORT).show()
-                        // La actualización de la lista local y la UI se maneja con el listener de plantsRef
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Error al actualizar la planta: $customName", Toast.LENGTH_SHORT).show()
-                    }
-            }
-
-            dialog.dismiss()
-        }
-
-        dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
-        dialog.show()
-    }
-
     private fun saveNewPlant(plant: Plant) {
         val newPlantRef = plantsRef.push()
         plant.id = newPlantRef.key
@@ -541,9 +455,10 @@ class PantallaPrincipal : AppCompatActivity() {
         sensorDataListener?.let { listener ->
             currentPlantId?.let { plantId ->
                 val currentUser = auth.currentUser
+                val currentPlant = currentUserPlants.find { it.id == plantId }
                 val isTargetUserAndPlant = currentUser != null &&
                                          currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                         currentUserPlants.find { it.id == plantId }?.name == "vaporub"
+                                         currentPlant?.name?.lowercase() == "vaporub"
 
                 Log.d("SensorData", "isTargetUserAndPlant: $isTargetUserAndPlant")
 
@@ -562,9 +477,10 @@ class PantallaPrincipal : AppCompatActivity() {
 
         currentPlantId?.let { plantId ->
             val currentUser = auth.currentUser
+            val currentPlant = currentUserPlants.find { it.id == plantId }
             val isTargetUserAndPlant = currentUser != null &&
                                      currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                     currentUserPlants.find { it.id == plantId }?.name == "vaporub"
+                                     currentPlant?.name?.lowercase() == "vaporub"
 
             Log.d("SensorData", "isTargetUserAndPlant (after detach check): $isTargetUserAndPlant")
 
@@ -683,6 +599,90 @@ class PantallaPrincipal : AppCompatActivity() {
                 // No se actualiza la interfaz de usuario directamente desde el sensorData
             }
         }
+    }
+
+    private fun showEditPlantDialog(plant: Plant) {
+        val dialogBinding = DialogPlantQuestionnaireBinding.inflate(layoutInflater)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogBinding.root)
+            .setTitle("Editar Planta: ${plant.name}")
+            .setCancelable(false)
+            .create()
+
+        val plantTypes = arrayOf("Vegetal", "Fruta", "Hierba", "Flor", "Árbol", "Cactus/Suculenta", "Otro")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, plantTypes)
+        dialogBinding.spinnerPlantType.adapter = adapter
+
+        // Precargar datos de la planta
+        dialogBinding.etPlantName.setText(plant.name)
+        dialogBinding.etLightMin.setText(plant.idealLightMin.toString())
+        dialogBinding.etLightMax.setText(plant.idealLightMax.toString())
+        dialogBinding.etTemperatureMin.setText(plant.idealTempMin.toString())
+        dialogBinding.etTemperatureMax.setText(plant.idealTempMax.toString())
+        dialogBinding.etHumidityMin.setText(plant.idealHumidityMin.toString())
+        dialogBinding.etHumidityMax.setText(plant.idealHumidityMax.toString())
+
+        // Seleccionar el tipo de planta correcto en el Spinner (esto puede ser más complejo si los tipos no coinciden exactamente con imageRes)
+        val imageResToPlantType = mapOf(
+            "tomato" to "Vegetal",
+            "pepper" to "Fruta",
+            "lettuce" to "Hierba"
+        )
+        val plantTypeFromImage = imageResToPlantType[plant.imageRes] ?: "Otro"
+        val spinnerPosition = plantTypes.indexOf(plantTypeFromImage)
+        if (spinnerPosition >= 0) {
+            dialogBinding.spinnerPlantType.setSelection(spinnerPosition)
+        }
+
+        dialogBinding.btnSavePlant.setOnClickListener {
+            val plantType = dialogBinding.spinnerPlantType.selectedItem.toString()
+            val customName = dialogBinding.etPlantName.text.toString().trim()
+            val lightMinText = dialogBinding.etLightMin.text.toString()
+            val lightMaxText = dialogBinding.etLightMax.text.toString()
+            val tempMinText = dialogBinding.etTemperatureMin.text.toString()
+            val tempMaxText = dialogBinding.etTemperatureMax.text.toString()
+            val humidityMinText = dialogBinding.etHumidityMin.text.toString()
+            val humidityMaxText = dialogBinding.etHumidityMax.text.toString()
+
+            if (customName.isEmpty() || lightMinText.isEmpty() || lightMaxText.isEmpty() || tempMinText.isEmpty() || tempMaxText.isEmpty() || humidityMinText.isEmpty() || humidityMaxText.isEmpty()) {
+                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Crear un mapa con los datos actualizados
+            val updatedPlantData = hashMapOf<String, Any>(
+                "name" to customName,
+                "imageRes" to when (plantType) {
+                    "Vegetal" -> "tomato"
+                    "Fruta" -> "pepper"
+                    "Hierba" -> "lettuce"
+                    else -> "default"
+                },
+                "idealTempMin" to lightMinText.toInt(), // Corregir mapeo
+                "idealTempMax" to lightMaxText.toInt(), // Corregir mapeo
+                "idealHumidityMin" to humidityMinText.toInt(),
+                "idealHumidityMax" to humidityMaxText.toInt(),
+                "idealLightMin" to tempMinText.toInt(), // Corregir mapeo
+                "idealLightMax" to tempMaxText.toInt() // Corregir mapeo
+            )
+
+            // Actualizar la planta en Firebase
+            plant.id?.let { plantId ->
+                plantsRef.child(plantId).updateChildren(updatedPlantData)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Planta actualizada: $customName", Toast.LENGTH_SHORT).show()
+                        // La actualización de la lista local y la UI se maneja con el listener de plantsRef
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Error al actualizar la planta: $customName", Toast.LENGTH_SHORT).show()
+                    }
+            }
+
+            dialog.dismiss()
+        }
+
+        dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     inner class PlantAdapter(

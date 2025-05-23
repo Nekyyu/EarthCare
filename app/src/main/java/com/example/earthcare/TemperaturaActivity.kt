@@ -30,6 +30,7 @@ class TemperaturaActivity : AppCompatActivity() {
     private lateinit var textViewMaxTemperaturaValue: TextView
     private lateinit var textViewMinTemperaturaValue: TextView
     private lateinit var textViewPrediccionTemperaturaValue: TextView
+    private lateinit var textViewUltimoDatoTemperaturaConFecha: TextView
     private lateinit var imageButtonBackTemperatura: ImageButton
 
     private lateinit var auth: FirebaseAuth
@@ -39,6 +40,7 @@ class TemperaturaActivity : AppCompatActivity() {
     private var currentPlantId: String = ""
     private var idealTempMin: Float = 18f
     private var idealTempMax: Float = 25f
+    private lateinit var currentUserPlants: MutableList<Plant>
 
     private lateinit var currentPlantListener: ValueEventListener
     private lateinit var sensorDataListener: ValueEventListener
@@ -52,6 +54,7 @@ class TemperaturaActivity : AppCompatActivity() {
         textViewMaxTemperaturaValue = findViewById(R.id.textViewMaxTemperaturaValue)
         textViewMinTemperaturaValue = findViewById(R.id.textViewMinTemperaturaValue)
         textViewPrediccionTemperaturaValue = findViewById(R.id.textViewPrediccionTemperaturaValue)
+        textViewUltimoDatoTemperaturaConFecha = findViewById(R.id.textViewUltimoDatoTemperaturaConFecha)
         imageButtonBackTemperatura = findViewById(R.id.imageButtonBackTemperatura)
 
         // Inicializar Firebase
@@ -64,16 +67,37 @@ class TemperaturaActivity : AppCompatActivity() {
 
         userRef = database.getReference("users").child(currentUser.uid)
         sensorDataRef = database.getReference("sensorData").child(currentUser.uid)
+        currentUserPlants = mutableListOf()
 
         // Configurar gráfica
         configureChart(chartTemperatura)
 
         // Configurar listeners
         setupFirebaseListeners()
+        loadUserPlants()
 
         imageButtonBackTemperatura.setOnClickListener {
             onBackPressed()
         }
+    }
+
+    private fun loadUserPlants() {
+        userRef.child("plants").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                currentUserPlants.clear()
+                for (plantSnapshot in snapshot.children) {
+                    val plant = plantSnapshot.getValue(Plant::class.java)
+                    plant?.let {
+                        it.id = plantSnapshot.key ?: ""
+                        currentUserPlants.add(it)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@TemperaturaActivity, "Error al cargar plantas", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun setupFirebaseListeners() {
@@ -146,7 +170,7 @@ class TemperaturaActivity : AppCompatActivity() {
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(false)
         xAxis.setDrawAxisLine(false)
-        xAxis.textColor = Color.parseColor("#FFFFFF")
+        xAxis.textColor = Color.parseColor("#000000")
         xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
@@ -155,7 +179,7 @@ class TemperaturaActivity : AppCompatActivity() {
 
         // Configurar eje Y izquierdo
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.parseColor("#FFFFFF")
+        leftAxis.textColor = Color.parseColor("#000000")
         leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
         leftAxis.gridColor = Color.parseColor("#CCCCCC")
@@ -170,7 +194,7 @@ class TemperaturaActivity : AppCompatActivity() {
         rightAxis.isEnabled = false
 
         // Configurar leyenda
-        chart.legend.textColor = Color.parseColor("#FFFFFF")
+        chart.legend.textColor = Color.parseColor("#000000")
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
@@ -219,38 +243,44 @@ class TemperaturaActivity : AppCompatActivity() {
     private fun readFirebaseData() {
         // Remover listener anterior si existe
         if (::sensorDataListener.isInitialized) {
-             // Determinar la referencia correcta para remover el listener
             val currentUser = auth.currentUser
+            val currentPlant = currentUserPlants.find { it.id == currentPlantId }
             val isTargetUserAndPlant = currentUser != null &&
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                       // Misma nota importante sobre la identificación de la planta 'vaporub'
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                     currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                     currentPlant?.name?.lowercase() == "vaporub"
 
             val refToDetach = if (isTargetUserAndPlant) {
-                // Apuntar al nodo 'test' para los datos reales
                 database.getReference("test")
             } else {
-                 sensorDataRef.child(currentPlantId).child("history")
+                sensorDataRef.child(currentPlantId).child("history")
             }
-             refToDetach.removeEventListener(sensorDataListener)
+            refToDetach.removeEventListener(sensorDataListener)
         }
 
         if (currentPlantId.isEmpty()) return
 
         val currentUser = auth.currentUser
+        val currentPlant = currentUserPlants.find { it.id == currentPlantId }
         val isTargetUserAndPlant = currentUser != null &&
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                   // Misma nota importante sobre la identificación de la planta 'vaporub'
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                 currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                 currentPlant?.name?.lowercase() == "vaporub"
 
         val dataQuery = if (isTargetUserAndPlant) {
-            // Apuntar al nodo 'test' y ordenar por clave (timestamp string) y limitar a 24
             database.getReference("test").orderByKey().limitToLast(24)
         } else {
-            // Referencia a la historia de la planta dentro del usuario (sin cambios)
-            sensorDataRef.child(currentPlantId).child("history")
-                .orderByChild("timestamp")
-                .limitToLast(24)
+            // Generar datos ficticios para otras plantas
+            val fakeData = generateFakeHistory(24)
+            val fakeDataRef = sensorDataRef.child(currentPlantId).child("history")
+            
+            // Limpiar datos anteriores
+            fakeDataRef.removeValue().addOnCompleteListener {
+                // Guardar nuevos datos ficticios
+                fakeData.forEach { (timestamp, data) ->
+                    fakeDataRef.child(timestamp.toString()).setValue(data)
+                }
+            }
+            
+            fakeDataRef.orderByChild("timestamp").limitToLast(24)
         }
 
         sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
@@ -259,6 +289,8 @@ class TemperaturaActivity : AppCompatActivity() {
                 val timestamps = mutableListOf<String>()
                 var maxTemperatura = Float.NEGATIVE_INFINITY
                 var minTemperatura = Float.POSITIVE_INFINITY
+                var lastTemp: Float? = null
+                var lastTimestampLabel: String = ""
 
                 snapshot.children.forEachIndexed { index, dataSnapshot ->
                     // Para datos en 'test', la estructura es diferente, necesitamos acceder a los valores dentro del snapshot hijo
@@ -312,6 +344,8 @@ class TemperaturaActivity : AppCompatActivity() {
                             entries.add(Entry(xValue, tempValue))
                             if (tempValue > maxTemperatura) maxTemperatura = tempValue
                             if (tempValue < minTemperatura) minTemperatura = tempValue
+                            lastTemp = tempValue
+                            lastTimestampLabel = timestampLabel
                         }
                     }
                 }
@@ -323,11 +357,20 @@ class TemperaturaActivity : AppCompatActivity() {
                     // Por ahora, mantenemos la lógica existente
                     val prediccion = calcularPrediccion(entries)
                     textViewPrediccionTemperaturaValue.text = String.format("%.1f°C", prediccion)
+                    
+                    // Actualizar el TextView del último dato con fecha
+                    lastTemp?.let { temp ->
+                         textViewUltimoDatoTemperaturaConFecha.text = String.format("Último dato: %.1f°C (%s)", temp, lastTimestampLabel)
+                    } ?: run { 
+                         textViewUltimoDatoTemperaturaConFecha.text = "Último dato: -- (fecha)"
+                    }
+
                 } else {
                     // Limpiar la gráfica si no hay datos
                     updateChart(mutableListOf(), mutableListOf())
                     updateMinMax(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)
                     textViewPrediccionTemperaturaValue.text = "N/A"
+                     textViewUltimoDatoTemperaturaConFecha.text = "Último dato: -- (fecha)"
                 }
             }
 
@@ -400,6 +443,29 @@ class TemperaturaActivity : AppCompatActivity() {
     private fun updateMinMax(max: Float, min: Float) {
         textViewMaxTemperaturaValue.text = String.format("%.1f°C", max)
         textViewMinTemperaturaValue.text = String.format("%.1f°C", min)
+    }
+
+    private fun generateFakeHistory(count: Int): Map<Long, SensorData> {
+        val random = Random()
+        val now = System.currentTimeMillis()
+        val data = mutableMapOf<Long, SensorData>()
+        
+        for (i in 0 until count) {
+            val timestamp = now - (count - i) * 3600000 // Cada hora
+            val temperatura = random.nextFloat() * 10 + 20 // Entre 20 y 30 grados
+            
+            data[timestamp] = SensorData(
+                Hora = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp)),
+                humdedad_ext = random.nextFloat() * 30 + 40,
+                humedad_suelo = random.nextFloat() * 30 + 40,
+                luz = random.nextFloat() * 10000 + 5000,
+                porcentaje_humedad_suelo = random.nextFloat() * 30 + 40,
+                temperatura_ext = temperatura,
+                timestamp = timestamp
+            )
+        }
+        
+        return data
     }
 
     override fun onDestroy() {

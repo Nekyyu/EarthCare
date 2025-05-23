@@ -32,6 +32,7 @@ class HumedadActivity : AppCompatActivity() {
     private lateinit var textViewMaxHumedadExteriorValue: TextView
     private lateinit var textViewMinHumedadExteriorValue: TextView
     private lateinit var textViewPrediccionHumedadExteriorValue: TextView
+    private lateinit var textViewUltimoDatoHumedadConFecha: TextView
     private lateinit var imageButtonBackHumedad: ImageButton
 
     private lateinit var auth: FirebaseAuth
@@ -41,6 +42,7 @@ class HumedadActivity : AppCompatActivity() {
     private var currentPlantId: String = ""
     private var idealHumMin: Float = 40f
     private var idealHumMax: Float = 70f
+    private lateinit var currentUserPlants: MutableList<Plant>
 
     private lateinit var currentPlantListener: ValueEventListener
     private lateinit var sensorDataListener: ValueEventListener
@@ -54,6 +56,7 @@ class HumedadActivity : AppCompatActivity() {
         textViewMaxHumedadExteriorValue = findViewById(R.id.textViewMaxHumedadExteriorValue)
         textViewMinHumedadExteriorValue = findViewById(R.id.textViewMinHumedadExteriorValue)
         textViewPrediccionHumedadExteriorValue = findViewById(R.id.textViewPrediccionHumedadExteriorValue)
+        textViewUltimoDatoHumedadConFecha = findViewById(R.id.textViewUltimoDatoHumedadConFecha)
         imageButtonBackHumedad = findViewById(R.id.imageButtonBackHumedad)
 
         // Inicializar Firebase
@@ -66,16 +69,37 @@ class HumedadActivity : AppCompatActivity() {
 
         userRef = database.getReference("users").child(currentUser.uid)
         sensorDataRef = database.getReference("sensorData").child(currentUser.uid)
+        currentUserPlants = mutableListOf()
 
         // Configurar gráfica
         configureChart(chartHumedadExterior)
 
         // Configurar listeners
         setupFirebaseListeners()
+        loadUserPlants()
 
         imageButtonBackHumedad.setOnClickListener {
             onBackPressed()
         }
+    }
+
+    private fun loadUserPlants() {
+        userRef.child("plants").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                currentUserPlants.clear()
+                for (plantSnapshot in snapshot.children) {
+                    val plant = plantSnapshot.getValue(Plant::class.java)
+                    plant?.let {
+                        it.id = plantSnapshot.key ?: ""
+                        currentUserPlants.add(it)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@HumedadActivity, "Error al cargar plantas", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun setupFirebaseListeners() {
@@ -152,7 +176,7 @@ class HumedadActivity : AppCompatActivity() {
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(false)
         xAxis.setDrawAxisLine(false)
-        xAxis.textColor = Color.parseColor("#FFFFFF")
+        xAxis.textColor = Color.parseColor("#000000")
         xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
@@ -161,7 +185,7 @@ class HumedadActivity : AppCompatActivity() {
 
         // Configurar eje Y izquierdo
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.parseColor("#FFFFFF")
+        leftAxis.textColor = Color.parseColor("#000000")
         leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
         leftAxis.gridColor = Color.parseColor("#CCCCCC")
@@ -176,7 +200,7 @@ class HumedadActivity : AppCompatActivity() {
         rightAxis.isEnabled = false
 
         // Configurar leyenda
-        chart.legend.textColor = Color.parseColor("#FFFFFF")
+        chart.legend.textColor = Color.parseColor("#000000")
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
@@ -225,15 +249,13 @@ class HumedadActivity : AppCompatActivity() {
     private fun readFirebaseData() {
         // Remover listener anterior si existe
         if (::sensorDataListener.isInitialized) {
-            // Determinar la referencia correcta para remover el listener
             val currentUser = auth.currentUser
+            val currentPlant = currentUserPlants.find { it.id == currentPlantId }
             val isTargetUserAndPlant = currentUser != null &&
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                       // Misma nota importante sobre la identificación de la planta 'vaporub'
-                                       currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                     currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                     currentPlant?.name?.lowercase() == "vaporub"
 
             val refToDetach = if (isTargetUserAndPlant) {
-                // Apuntar al nodo 'test' para los datos reales
                 database.getReference("test")
             } else {
                 sensorDataRef.child(currentPlantId).child("history")
@@ -244,19 +266,27 @@ class HumedadActivity : AppCompatActivity() {
         if (currentPlantId.isEmpty()) return
 
         val currentUser = auth.currentUser
+        val currentPlant = currentUserPlants.find { it.id == currentPlantId }
         val isTargetUserAndPlant = currentUser != null &&
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                   // Misma nota importante sobre la identificación de la planta 'vaporub'
-                                   currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3"
+                                 currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                                 currentPlant?.name?.lowercase() == "vaporub"
 
         val dataQuery = if (isTargetUserAndPlant) {
-            // Apuntar al nodo 'test' y ordenar por clave (timestamp string) y limitar a 24
             database.getReference("test").orderByKey().limitToLast(24)
         } else {
-            // Referencia a la historia de la planta dentro del usuario (sin cambios)
-            sensorDataRef.child(currentPlantId).child("history")
-                .orderByChild("timestamp")
-                .limitToLast(24)
+            // Generar datos ficticios para otras plantas
+            val fakeData = generateFakeHistory(24)
+            val fakeDataRef = sensorDataRef.child(currentPlantId).child("history")
+            
+            // Limpiar datos anteriores
+            fakeDataRef.removeValue().addOnCompleteListener {
+                // Guardar nuevos datos ficticios
+                fakeData.forEach { (timestamp, data) ->
+                    fakeDataRef.child(timestamp.toString()).setValue(data)
+                }
+            }
+            
+            fakeDataRef.orderByChild("timestamp").limitToLast(24)
         }
 
         sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
@@ -265,6 +295,8 @@ class HumedadActivity : AppCompatActivity() {
                 val timestamps = mutableListOf<String>()
                 var maxHumedad = Float.NEGATIVE_INFINITY
                 var minHumedad = Float.POSITIVE_INFINITY
+                var lastHum: Float? = null
+                var lastTimestampLabel: String = ""
 
                 snapshot.children.forEachIndexed { index, dataSnapshot ->
                     // Para datos en 'test', la estructura es diferente, necesitamos acceder a los valores dentro del snapshot hijo
@@ -318,6 +350,8 @@ class HumedadActivity : AppCompatActivity() {
                             entries.add(Entry(xValue, humedadValue))
                             if (humedadValue > maxHumedad) maxHumedad = humedadValue
                             if (humedadValue < minHumedad) minHumedad = humedadValue
+                            lastHum = humedadValue
+                            lastTimestampLabel = timestampLabel
                         }
                     }
                 }
@@ -329,11 +363,20 @@ class HumedadActivity : AppCompatActivity() {
                     // Por ahora, mantenemos la lógica existente
                     val prediccion = calcularPrediccion(entries)
                     textViewPrediccionHumedadExteriorValue.text = String.format("%.1f%%", prediccion)
+
+                    // Actualizar el TextView del último dato con fecha
+                    lastHum?.let { hum ->
+                         textViewUltimoDatoHumedadConFecha.text = String.format("Último dato: %.1f%% (%s)", hum, lastTimestampLabel)
+                    } ?: run { 
+                         textViewUltimoDatoHumedadConFecha.text = "Último dato: -- (fecha)"
+                    }
+
                 } else {
                     // Limpiar la gráfica si no hay datos
                     updateChart(mutableListOf(), mutableListOf())
                     updateMinMax(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY)
                     textViewPrediccionHumedadExteriorValue.text = "N/A"
+                    textViewUltimoDatoHumedadConFecha.text = "Último dato: -- (fecha)"
                 }
             }
 
@@ -406,6 +449,29 @@ class HumedadActivity : AppCompatActivity() {
     private fun updateMinMax(max: Float, min: Float) {
         textViewMaxHumedadExteriorValue.text = String.format("%.1f%%", max)
         textViewMinHumedadExteriorValue.text = String.format("%.1f%%", min)
+    }
+
+    private fun generateFakeHistory(count: Int): Map<Long, SensorData> {
+        val random = Random()
+        val now = System.currentTimeMillis()
+        val data = mutableMapOf<Long, SensorData>()
+        
+        for (i in 0 until count) {
+            val timestamp = now - (count - i) * 3600000 // Cada hora
+            val humedad = random.nextFloat() * 30 + 40 // Entre 40 y 70
+            
+            data[timestamp] = SensorData(
+                Hora = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp)),
+                humdedad_ext = humedad,
+                humedad_suelo = random.nextFloat() * 30 + 40,
+                luz = random.nextFloat() * 10000 + 5000,
+                porcentaje_humedad_suelo = random.nextFloat() * 30 + 40,
+                temperatura_ext = random.nextFloat() * 10 + 20,
+                timestamp = timestamp
+            )
+        }
+        
+        return data
     }
 
     override fun onDestroy() {
