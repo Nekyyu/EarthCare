@@ -204,4 +204,32 @@
         app:layout_constraintEnd_toStartOf="@+id/PlantaGPT"
         app:layout_constraintTop_toTopOf="@+id/PlantaGPT"
         app:tint="@color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNotifications"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Notificaciones"
+        android:elevation="8dp"
+        android:src="@drawable/ic_notificacion_boton"
+        app:backgroundTint="@color/primaryColor"
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/fabChangePlant"
+        app:tint="@color/white" />
+
+    <TextView
+        android:id="@+id/notificationBadge"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:background="@drawable/badge_background"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/fabNotifications"
+        app:layout_constraintEnd_toEndOf="@id/fabNotifications"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

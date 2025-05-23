@@ -14,6 +14,7 @@ import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.earthcare.databinding.DialogAlertsBinding
 import com.example.earthcare.databinding.DialogPlantQuestionnaireBinding
 import com.example.earthcare.databinding.DialogSelectPlantBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -32,9 +33,11 @@ class PantallaPrincipal : AppCompatActivity() {
     private lateinit var userRef: DatabaseReference
     private lateinit var plantsRef: DatabaseReference
     private lateinit var sensorDataRef: DatabaseReference
-
+    private lateinit var notificationBadge: TextView
+    private var activeAlerts = mutableListOf<PlantAlert>()
     private lateinit var currentUserPlants: MutableList<Plant>
     private var currentPlantId: String? = null
+    private var isFirstLogin = true
 
     // Views
     private lateinit var imageViewIconLuz: ImageView
@@ -80,7 +83,7 @@ class PantallaPrincipal : AppCompatActivity() {
 
     private fun setupViews() {
         // Configurar botones e iconos
-        findViewById<ImageButton>(R.id.PlantaGPT).setOnClickListener {
+        findViewById<FloatingActionButton>(R.id.PlantaGPT).setOnClickListener {
             startActivity(Intent(this, PlantaGPT::class.java))
         }
 
@@ -104,6 +107,11 @@ class PantallaPrincipal : AppCompatActivity() {
         }
         imageViewIconHumedad.setOnClickListener {
             startActivity(Intent(this, HumedadActivity::class.java))
+        }
+
+        notificationBadge = findViewById(R.id.notificationBadge)
+        findViewById<FloatingActionButton>(R.id.fabNotifications).setOnClickListener {
+            showAlertsDialog()
         }
     }
 
@@ -167,13 +175,12 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun initializeUserData() {
+        isFirstLogin = true
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
-                    // Usuario nuevo - crear estructura inicial
                     createNewUserStructure()
                 } else {
-                    // Usuario existente - cargar datos
                     loadUserPlants()
                 }
             }
@@ -190,7 +197,6 @@ class PantallaPrincipal : AppCompatActivity() {
         )
 
         userRef.setValue(userData).addOnSuccessListener {
-            // Mostrar diálogo para agregar primera planta
             showFirstPlantDialog()
         }.addOnFailureListener {
             Toast.makeText(this, "Error al crear usuario", Toast.LENGTH_SHORT).show()
@@ -220,8 +226,6 @@ class PantallaPrincipal : AppCompatActivity() {
                         currentUserPlants.add(it)
                     }
                 }
-
-                // Cargar planta actual si existe
                 loadCurrentPlant()
             }
             override fun onCancelled(error: DatabaseError) {
@@ -235,23 +239,19 @@ class PantallaPrincipal : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val savedPlantId = snapshot.getValue(String::class.java)
 
-                // Verificar si la planta guardada existe en la lista
                 currentPlantId = if (!savedPlantId.isNullOrEmpty() &&
                     currentUserPlants.any { it.id == savedPlantId }) {
                     savedPlantId
                 } else if (currentUserPlants.isNotEmpty()) {
-                    // Seleccionar la primera planta si la guardada no existe
                     currentUserPlants[0].id
                 } else {
                     null
                 }
 
-                // Actualizar en Firebase si es necesario
                 if (currentPlantId != savedPlantId && !currentPlantId.isNullOrEmpty()) {
                     userRef.child("currentPlant").setValue(currentPlantId)
                 }
 
-                // Actualizar UI
                 updatePlantUI()
                 readLastSensorData()
             }
@@ -265,7 +265,6 @@ class PantallaPrincipal : AppCompatActivity() {
     private fun updatePlantUI() {
         currentPlantId?.let { plantId ->
             currentUserPlants.find { it.id == plantId }?.let { plant ->
-                // Actualizar imagen y datos de la planta
                 findViewById<ImageView>(R.id.ivPlant).setImageResource(
                     when (plant.imageRes) {
                         "tomato" -> R.drawable.ic_tomato
@@ -274,7 +273,6 @@ class PantallaPrincipal : AppCompatActivity() {
                         else -> R.drawable.ic_planta
                     }
                 )
-                // Actualizar el nombre de la planta
                 findViewById<TextView>(R.id.tvPlantName).text = plant.name
             }
         }
@@ -296,11 +294,9 @@ class PantallaPrincipal : AppCompatActivity() {
             readLastSensorData()
             dialog.dismiss()
         }, { plantToEdit ->
-            // Implementar lógica para editar planta
             showEditPlantDialog(plantToEdit)
             dialog.dismiss()
         }, { plantToDelete ->
-            // Mostrar diálogo de confirmación antes de eliminar
             MaterialAlertDialogBuilder(this)
                 .setTitle("Confirmar eliminación")
                 .setMessage("¿Estás seguro de que quieres eliminar a ${plantToDelete.name}?")
@@ -345,7 +341,8 @@ class PantallaPrincipal : AppCompatActivity() {
             val humidityMinText = dialogBinding.etHumidityMin.text.toString()
             val humidityMaxText = dialogBinding.etHumidityMax.text.toString()
 
-            if (customName.isEmpty() || lightMinText.isEmpty() || lightMaxText.isEmpty() || tempMinText.isEmpty() || tempMaxText.isEmpty() || humidityMinText.isEmpty() || humidityMaxText.isEmpty()) {
+            if (customName.isEmpty() || lightMinText.isEmpty() || lightMaxText.isEmpty() ||
+                tempMinText.isEmpty() || tempMaxText.isEmpty() || humidityMinText.isEmpty() || humidityMaxText.isEmpty()) {
                 Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -384,14 +381,11 @@ class PantallaPrincipal : AppCompatActivity() {
 
         newPlantRef.setValue(plant)
             .addOnSuccessListener {
-                // Si es la primera planta, establecer como actual
                 if (currentUserPlants.isEmpty()) {
                     userRef.child("currentPlant").setValue(plant.id)
                     currentPlantId = plant.id
                     updatePlantUI()
                 }
-
-                // Crear datos iniciales para la planta
                 initializeSensorDataForPlant(plant.id!!)
                 Toast.makeText(this, "Planta agregada", Toast.LENGTH_SHORT).show()
             }
@@ -402,14 +396,12 @@ class PantallaPrincipal : AppCompatActivity() {
 
     private fun initializeSensorDataForPlant(plantId: String) {
         val plantDataRef = plantsRef.child(plantId).child("sensorData")
-
         plantDataRef.child("history").addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
                     generateFakeHistory(plantId)
                 }
             }
-
             override fun onCancelled(error: DatabaseError) {
                 Log.e("SensorData", "Error checking history: ${error.message}")
             }
@@ -422,9 +414,8 @@ class PantallaPrincipal : AppCompatActivity() {
 
         currentPlant?.let { plant ->
             val calendar = Calendar.getInstance()
-            calendar.add(Calendar.HOUR, -24) // Últimas 24 horas
+            calendar.add(Calendar.HOUR, -24)
 
-            // Asegurar que los rangos sean válidos
             val lightMin = minOf(plant.idealLightMin, plant.idealLightMax)
             val lightMax = maxOf(plant.idealLightMin, plant.idealLightMax)
             val tempMin = minOf(plant.idealTempMin, plant.idealTempMax)
@@ -449,21 +440,17 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun readLastSensorData() {
-        Log.d("SensorData", "readLastSensorData called for plant ID: $currentPlantId")
+        Log.d("SensorData", "Leyendo datos para planta: $currentPlantId")
 
-        // Remover listener anterior si existe
         sensorDataListener?.let { listener ->
             currentPlantId?.let { plantId ->
                 val currentUser = auth.currentUser
                 val currentPlant = currentUserPlants.find { it.id == plantId }
                 val isTargetUserAndPlant = currentUser != null &&
-                                         currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                         currentPlant?.name?.lowercase() == "vaporub"
-
-                Log.d("SensorData", "isTargetUserAndPlant: $isTargetUserAndPlant")
+                        currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                        currentPlant?.name?.lowercase() == "vaporub"
 
                 val refToDetach = if (isTargetUserAndPlant) {
-                    // Apuntar al nodo 'test' para los datos reales
                     database.getReference("test")
                 } else {
                     database.getReference("sensorData")
@@ -479,61 +466,40 @@ class PantallaPrincipal : AppCompatActivity() {
             val currentUser = auth.currentUser
             val currentPlant = currentUserPlants.find { it.id == plantId }
             val isTargetUserAndPlant = currentUser != null &&
-                                     currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
-                                     currentPlant?.name?.lowercase() == "vaporub"
-
-            Log.d("SensorData", "isTargetUserAndPlant (after detach check): $isTargetUserAndPlant")
+                    currentUser.uid == "u6IpDEHmhgaZpeycKOTgnLSBinJ3" &&
+                    currentPlant?.name?.lowercase() == "vaporub"
 
             val dataQuery = if (isTargetUserAndPlant) {
-                // Apuntar al nodo 'test' y ordenar por clave (timestamp string)
                 database.getReference("test").orderByKey().limitToLast(1)
             } else {
-                // Referencia a la historia de la planta dentro del usuario (sin cambios)
                 database.getReference("sensorData")
                     .child(currentUser?.uid ?: "")
                     .child(plantId)
                     .child("history")
-                    .orderByChild("timestamp") // Asegurarse de ordenar por timestamp numérico si existe
+                    .orderByChild("timestamp")
                     .limitToLast(1)
             }
 
-            Log.d("SensorData", "Using database query: ${dataQuery.toString()}")
-
             sensorDataListener = dataQuery.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    Log.d("SensorData", "Data received from: ${snapshot.ref.toString()}")
-                    Log.d("SensorData", "Snapshot exists: ${snapshot.exists()}")
-                    Log.d("SensorData", "Snapshot children count: ${snapshot.childrenCount}")
+                    Log.d("SensorData", "Datos recibidos: ${snapshot.value}")
 
                     if (snapshot.exists()) {
-                        // Para datos en 'test', obtenemos el primer (y único) hijo del snapshot limitToLast(1)
                         val latestDataSnapshot = if (isTargetUserAndPlant) {
                             snapshot.children.firstOrNull()
                         } else {
-                            // Para la historia de la planta, ya está ordenado y limitado
                             snapshot.children.firstOrNull()
                         }
 
                         latestDataSnapshot?.let { dataSnapshot ->
-                            Log.d("SensorData", "Processing latest entry key: ${dataSnapshot.key}")
-                            Log.d("SensorData", "Raw latest entry data: ${dataSnapshot.value}")
-                            
-                            // Ahora intentamos deserializar usando SensorData
                             val data = dataSnapshot.getValue(SensorData::class.java)
-                            
                             if (data != null) {
-                                Log.d("SensorData", "Successfully deserialized data: $data")
+                                Log.d("SensorData", "Datos deserializados: Luz=${data.luz}, Temp=${data.temperatura_ext}, Hum=${data.humdedad_ext}")
                                 updateSensorData(data)
                             } else {
-                                Log.e("SensorData", "Failed to deserialize latest data for key: ${dataSnapshot.key}")
-                                // Puedes añadir aquí un manejo de error en la UI si es necesario
+                                Log.e("SensorData", "Error al deserializar datos")
                             }
-                        } ?: run {
-                             Log.d("SensorData", "Snapshot exists but no children found after query.")
                         }
-
-                    } else {
-                         Log.d("SensorData", "Snapshot does not exist.")
                     }
                 }
 
@@ -544,40 +510,13 @@ class PantallaPrincipal : AppCompatActivity() {
         }
     }
 
-    private fun deletePlant(plant: Plant) {
-        plant.id?.let { plantId ->
-            // Eliminar datos del sensor asociados a la planta
-            plantsRef.child(plantId).child("sensorData").removeValue()
-
-            // Eliminar la planta de la base de datos
-            plantsRef.child(plantId).removeValue()
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Planta eliminada: ${plant.name}", Toast.LENGTH_SHORT).show()
-
-                    // Si la planta eliminada era la seleccionada actualmente, deseleccionarla
-                    if (currentPlantId == plantId) {
-                        currentPlantId = null
-                        userRef.child("currentPlant").removeValue()
-                        updatePlantUI()
-                        updateSensorUI(0f, 0f, 0f)
-                    }
-
-                    // Actualizar la lista local (esto ya lo maneja el listener de plantsRef)
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Error al eliminar la planta: ${plant.name}", Toast.LENGTH_SHORT).show()
-                }
-        }
-    }
-
     private fun updateSensorData(data: SensorData) {
         runOnUiThread {
-            // Actualizar los valores de los sensores
             data.luz?.let { luz ->
                 textViewUltimoDatoLuz.text = String.format("%.1f lux", luz)
                 imageViewIconLuz.alpha = if (luz > 0f) 1f else 0.5f
             }
-            
+
             data.temperatura_ext?.let { temp ->
                 textViewUltimoDatoTemperatura.text = String.format("%.1f°C", temp)
                 imageViewIconTemperatura.setColorFilter(
@@ -588,16 +527,179 @@ class PantallaPrincipal : AppCompatActivity() {
                     }
                 )
             }
-            
+
             data.humdedad_ext?.let { hum ->
                 textViewUltimoDatoHumedad.text = String.format("%.1f%%", hum)
                 imageViewIconHumedad.alpha = if (hum > 0f) 1f else 0.5f
             }
 
-            // Actualizar la hora si está disponible
-            data.Hora?.let { hora ->
-                // No se actualiza la interfaz de usuario directamente desde el sensorData
+            checkPlantConditions(data)
+        }
+    }
+
+    private fun checkPlantConditions(sensorData: SensorData) {
+        currentPlantId?.let { plantId ->
+            val currentPlant = currentUserPlants.find { it.id == plantId }
+            currentPlant?.let { plant ->
+                val newAlerts = mutableListOf<PlantAlert>()
+
+                // Verificar luz
+                sensorData.luz?.let { luz ->
+                    if (luz < plant.idealLightMin) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.LIGHT,
+                            luz,
+                            plant.idealLightMin.toFloat(),
+                            plant.idealLightMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Luz baja: $luz < ${plant.idealLightMin}")
+                    } else if (luz > plant.idealLightMax) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.LIGHT,
+                            luz,
+                            plant.idealLightMin.toFloat(),
+                            plant.idealLightMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Luz alta: $luz > ${plant.idealLightMax}")
+                    } else {
+
+                    }
+                }
+
+                // Verificar temperatura
+                sensorData.temperatura_ext?.let { temp ->
+                    if (temp < plant.idealTempMin) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.TEMPERATURE,
+                            temp,
+                            plant.idealTempMin.toFloat(),
+                            plant.idealTempMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Temp baja: $temp < ${plant.idealTempMin}")
+                    } else if (temp > plant.idealTempMax) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.TEMPERATURE,
+                            temp,
+                            plant.idealTempMin.toFloat(),
+                            plant.idealTempMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Temp alta: $temp > ${plant.idealTempMax}")
+                    } else {
+
+                    }
+                }
+
+                // Verificar humedad
+                sensorData.humdedad_ext?.let { hum ->
+                    if (hum < plant.idealHumidityMin) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.HUMIDITY,
+                            hum,
+                            plant.idealHumidityMin.toFloat(),
+                            plant.idealHumidityMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Humedad baja: $hum < ${plant.idealHumidityMin}")
+                    } else if (hum > plant.idealHumidityMax) {
+                        newAlerts.add(PlantAlert(
+                            plant.name,
+                            PlantAlert.AlertType.HUMIDITY,
+                            hum,
+                            plant.idealHumidityMin.toFloat(),
+                            plant.idealHumidityMax.toFloat()
+                        ))
+                        Log.d("Alerta", "Humedad alta: $hum > ${plant.idealHumidityMax}")
+                    } else {
+
+                    }
+                }
+
+                // Solo actualizar si hay nuevas alertas diferentes a las anteriores
+                if (newAlerts.isNotEmpty() && (isFirstLogin || newAlerts != activeAlerts)) {
+                    activeAlerts.clear()
+                    activeAlerts.addAll(newAlerts)
+                    updateAlertsUI()
+                }
+
+                isFirstLogin = false
             }
+        }
+    }
+
+    private fun updateAlertsUI() {
+        runOnUiThread {
+            if (activeAlerts.isNotEmpty()) {
+                notificationBadge.text = activeAlerts.size.toString()
+                notificationBadge.visibility = View.VISIBLE
+
+                // Solo mostrar notificación si es el primer login
+                if (isFirstLogin) {
+                    showAlertNotification()
+                }
+
+                val scaleAnim = ObjectAnimator.ofPropertyValuesHolder(
+                    notificationBadge,
+                    PropertyValuesHolder.ofFloat("scaleX", 1.2f),
+                    PropertyValuesHolder.ofFloat("scaleY", 1.2f)
+                ).apply {
+                    duration = 500
+                    repeatCount = ObjectAnimator.INFINITE
+                    repeatMode = ObjectAnimator.REVERSE
+                    start()
+                }
+            } else {
+                notificationBadge.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showAlertNotification() {
+        Toast.makeText(this, "¡Nueva alerta en tus plantas!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showAlertsDialog() {
+        if (activeAlerts.isEmpty()) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Sin alertas")
+                .setMessage("Todas tus plantas están en condiciones óptimas")
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+
+        val dialogBinding = DialogAlertsBinding.inflate(layoutInflater)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogBinding.root)
+            .setTitle("Alertas de tus plantas")
+            .setPositiveButton("OK", null)
+            .create()
+
+        dialogBinding.rvAlerts.layoutManager = LinearLayoutManager(this)
+        dialogBinding.rvAlerts.adapter = AlertAdapter(activeAlerts)
+
+        dialog.show()
+    }
+
+    private fun deletePlant(plant: Plant) {
+        plant.id?.let { plantId ->
+            plantsRef.child(plantId).child("sensorData").removeValue()
+            plantsRef.child(plantId).removeValue()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Planta eliminada: ${plant.name}", Toast.LENGTH_SHORT).show()
+                    if (currentPlantId == plantId) {
+                        currentPlantId = null
+                        userRef.child("currentPlant").removeValue()
+                        updatePlantUI()
+                        updateSensorUI(0f, 0f, 0f)
+                    }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Error al eliminar la planta: ${plant.name}", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
@@ -613,7 +715,6 @@ class PantallaPrincipal : AppCompatActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, plantTypes)
         dialogBinding.spinnerPlantType.adapter = adapter
 
-        // Precargar datos de la planta
         dialogBinding.etPlantName.setText(plant.name)
         dialogBinding.etLightMin.setText(plant.idealLightMin.toString())
         dialogBinding.etLightMax.setText(plant.idealLightMax.toString())
@@ -622,7 +723,6 @@ class PantallaPrincipal : AppCompatActivity() {
         dialogBinding.etHumidityMin.setText(plant.idealHumidityMin.toString())
         dialogBinding.etHumidityMax.setText(plant.idealHumidityMax.toString())
 
-        // Seleccionar el tipo de planta correcto en el Spinner (esto puede ser más complejo si los tipos no coinciden exactamente con imageRes)
         val imageResToPlantType = mapOf(
             "tomato" to "Vegetal",
             "pepper" to "Fruta",
@@ -637,19 +737,19 @@ class PantallaPrincipal : AppCompatActivity() {
         dialogBinding.btnSavePlant.setOnClickListener {
             val plantType = dialogBinding.spinnerPlantType.selectedItem.toString()
             val customName = dialogBinding.etPlantName.text.toString().trim()
-            val lightMinText = dialogBinding.etLightMin.text.toString()
-            val lightMaxText = dialogBinding.etLightMax.text.toString()
-            val tempMinText = dialogBinding.etTemperatureMin.text.toString()
-            val tempMaxText = dialogBinding.etTemperatureMax.text.toString()
-            val humidityMinText = dialogBinding.etHumidityMin.text.toString()
-            val humidityMaxText = dialogBinding.etHumidityMax.text.toString()
 
-            if (customName.isEmpty() || lightMinText.isEmpty() || lightMaxText.isEmpty() || tempMinText.isEmpty() || tempMaxText.isEmpty() || humidityMinText.isEmpty() || humidityMaxText.isEmpty()) {
-                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+            val lightMin = dialogBinding.etLightMin.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealLightMin
+            val lightMax = dialogBinding.etLightMax.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealLightMax
+            val tempMin = dialogBinding.etTemperatureMin.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealTempMin
+            val tempMax = dialogBinding.etTemperatureMax.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealTempMax
+            val humidityMin = dialogBinding.etHumidityMin.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealHumidityMin
+            val humidityMax = dialogBinding.etHumidityMax.text.toString().takeIf { it.isNotEmpty() }?.toInt() ?: plant.idealHumidityMax
+
+            if (customName.isEmpty()) {
+                Toast.makeText(this, "El nombre de la planta es requerido", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Crear un mapa con los datos actualizados
             val updatedPlantData = hashMapOf<String, Any>(
                 "name" to customName,
                 "imageRes" to when (plantType) {
@@ -658,20 +758,18 @@ class PantallaPrincipal : AppCompatActivity() {
                     "Hierba" -> "lettuce"
                     else -> "default"
                 },
-                "idealTempMin" to lightMinText.toInt(), // Corregir mapeo
-                "idealTempMax" to lightMaxText.toInt(), // Corregir mapeo
-                "idealHumidityMin" to humidityMinText.toInt(),
-                "idealHumidityMax" to humidityMaxText.toInt(),
-                "idealLightMin" to tempMinText.toInt(), // Corregir mapeo
-                "idealLightMax" to tempMaxText.toInt() // Corregir mapeo
+                "idealTempMin" to tempMin,
+                "idealTempMax" to tempMax,
+                "idealHumidityMin" to humidityMin,
+                "idealHumidityMax" to humidityMax,
+                "idealLightMin" to lightMin,
+                "idealLightMax" to lightMax
             )
 
-            // Actualizar la planta en Firebase
             plant.id?.let { plantId ->
                 plantsRef.child(plantId).updateChildren(updatedPlantData)
                     .addOnSuccessListener {
                         Toast.makeText(this, "Planta actualizada: $customName", Toast.LENGTH_SHORT).show()
-                        // La actualización de la lista local y la UI se maneja con el listener de plantsRef
                     }
                     .addOnFailureListener {
                         Toast.makeText(this, "Error al actualizar la planta: $customName", Toast.LENGTH_SHORT).show()
@@ -683,6 +781,70 @@ class PantallaPrincipal : AppCompatActivity() {
 
         dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
         dialog.show()
+    }
+
+    inner class AlertAdapter(private val alerts: List<PlantAlert>) :
+        RecyclerView.Adapter<AlertAdapter.AlertViewHolder>() {
+
+        inner class AlertViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val icon: ImageView = view.findViewById(R.id.ivAlertIcon)
+            val title: TextView = view.findViewById(R.id.tvAlertTitle)
+            val message: TextView = view.findViewById(R.id.tvAlertMessage)
+            val plantName: TextView = view.findViewById(R.id.tvPlantName)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlertViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_alert, parent, false)
+            return AlertViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: AlertViewHolder, position: Int) {
+            val alert = alerts[position]
+
+            holder.plantName.text = alert.plantName
+
+            when (alert.alertType) {
+                PlantAlert.AlertType.LIGHT -> {
+                    holder.icon.setImageResource(R.drawable.ic_alert_light)
+                    if (alert.currentValue < alert.idealMin) {
+                        holder.title.text = "Poca luz"
+                        holder.message.text = "Necesita al menos ${alert.idealMin} lux (actual: ${alert.currentValue} lux)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.yellowAlert))
+                    } else {
+                        holder.title.text = "Mucha luz"
+                        holder.message.text = "Necesita máximo ${alert.idealMax} lux (actual: ${alert.currentValue} lux)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.orangeAlert))
+                    }
+                }
+                PlantAlert.AlertType.TEMPERATURE -> {
+                    holder.icon.setImageResource(R.drawable.ic_alert_temp)
+                    if (alert.currentValue < alert.idealMin) {
+                        holder.title.text = "Temperatura baja"
+                        holder.message.text = "Necesita al menos ${alert.idealMin}°C (actual: ${alert.currentValue}°C)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.blueAlert))
+                    } else {
+                        holder.title.text = "Temperatura alta"
+                        holder.message.text = "Necesita máximo ${alert.idealMax}°C (actual: ${alert.currentValue}°C)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.redAlert))
+                    }
+                }
+                PlantAlert.AlertType.HUMIDITY -> {
+                    holder.icon.setImageResource(R.drawable.ic_alert_humidity)
+                    if (alert.currentValue < alert.idealMin) {
+                        holder.title.text = "Humedad baja"
+                        holder.message.text = "Necesita al menos ${alert.idealMin}% (actual: ${alert.currentValue}%)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.lightBlue))
+                    } else {
+                        holder.title.text = "Humedad alta"
+                        holder.message.text = "Necesita máximo ${alert.idealMax}% (actual: ${alert.currentValue}%)"
+                        holder.icon.setColorFilter(ContextCompat.getColor(this@PantallaPrincipal, R.color.darkBlue))
+                    }
+                }
+            }
+        }
+
+        override fun getItemCount() = alerts.size
     }
 
     inner class PlantAdapter(
@@ -727,6 +889,16 @@ class PantallaPrincipal : AppCompatActivity() {
         override fun getItemCount() = plants.size
     }
 
+    data class PlantAlert(
+        val plantName: String,
+        val alertType: AlertType,
+        val currentValue: Float,
+        val idealMin: Float,
+        val idealMax: Float
+    ) {
+        enum class AlertType { LIGHT, TEMPERATURE, HUMIDITY }
+    }
+
     data class Plant(
         var id: String? = null,
         val name: String = "",
@@ -739,6 +911,6 @@ class PantallaPrincipal : AppCompatActivity() {
         val idealLightMin: Int = 0,
         val idealLightMax: Int = 0
     ) {
-        constructor() : this(null, "", "", "", 0, 0, 0, 0, 0, 0) // Constructor vacío para Firebase
+        constructor() : this(null, "", "", "", 0, 0, 0, 0, 0, 0)
     }
 }
