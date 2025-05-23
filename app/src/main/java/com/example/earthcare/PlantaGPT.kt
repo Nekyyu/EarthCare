@@ -1,6 +1,5 @@
 package com.example.earthcare
 
-
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -26,16 +25,13 @@ import java.util.Locale
 class PlantaGPT : AppCompatActivity() {
 
     private lateinit var userInput: EditText
-    private lateinit var sendButton: Button
+    private lateinit var sendButton: ImageButton
     private lateinit var recyclerViewMessages: RecyclerView
     private lateinit var buttonBack: ImageButton
 
     private val client = OkHttpClient()
     private val messages = mutableListOf<Message>()
     private lateinit var messageAdapter: MessageAdapter
-
-    private val endpoint = "https://josep-max5lkqq-eastus2.cognitiveservices.azure.com/openai/deployments/EarthCareAI/chat/completions?api-version=2025-01-01-preview"
-    private val apiKey = "D1sMgjonuufAn8WQHaEFD4peIQjAJ9JvTSbo4r7HvdwYtnRAPFGZJQQJ99BEACHYHv6XJ3w3AAAAACOGwjPH" // 🔒 Reemplázala desde configuración segura
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +42,6 @@ class PlantaGPT : AppCompatActivity() {
         recyclerViewMessages = findViewById(R.id.recyclerViewMessages)
         buttonBack = findViewById(R.id.buttonBack)
 
-        // Configurar RecyclerView
         messageAdapter = MessageAdapter(messages)
         recyclerViewMessages.layoutManager = LinearLayoutManager(this)
         recyclerViewMessages.adapter = messageAdapter
@@ -61,9 +56,6 @@ class PlantaGPT : AppCompatActivity() {
         }
 
         buttonBack.setOnClickListener { onBackPressed() }
-
-        // Mensaje de bienvenida inicial (opcional)
-        // addMessage(Message("¡Hola! ¿En qué puedo ayudarte con tu planta?", Sender.BOT))
     }
 
     private fun addMessage(message: Message) {
@@ -75,16 +67,13 @@ class PlantaGPT : AppCompatActivity() {
     }
 
     private fun sendMessageToAzure(prompt: String) {
-        // Mensaje de contexto ("system") como en el Playground
         val systemMessage = JSONObject()
         systemMessage.put("role", "system")
         systemMessage.put("content", "Eres un experto en cuidado de plantas. Responde de manera clara y breve.")
 
-        // Construir el historial de mensajes para enviarlo a la API
         val messagesArray = JSONArray()
         messagesArray.put(systemMessage)
 
-        // Añadir mensajes anteriores (excepto el mensaje de sistema inicial) y el nuevo mensaje del usuario
         messages.forEach { message ->
              val msgObj = JSONObject()
              msgObj.put("role", if (message.sender == Sender.USER) "user" else "assistant")
@@ -92,7 +81,6 @@ class PlantaGPT : AppCompatActivity() {
              messagesArray.put(msgObj)
         }
 
-        // Crear el objeto final JSON
         val json = JSONObject()
         json.put("messages", messagesArray)
         json.put("temperature", 0.7)
@@ -101,9 +89,9 @@ class PlantaGPT : AppCompatActivity() {
         val requestBody = json.toString().toRequestBody(mediaType)
 
         val request = Request.Builder()
-            .url(endpoint)
+            .url(Config.AZURE_OPENAI_ENDPOINT)
             .post(requestBody)
-            .addHeader("api-key", apiKey)
+            .addHeader("api-key", Config.AZURE_OPENAI_API_KEY)
             .addHeader("Content-Type", "application/json")
             .build()
 
@@ -127,7 +115,6 @@ class PlantaGPT : AppCompatActivity() {
         })
     }
 
-    // Adaptador para el RecyclerView
     inner class MessageAdapter(private val messages: List<Message>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         private val VIEW_TYPE_SENT = 1
@@ -160,7 +147,7 @@ class PlantaGPT : AppCompatActivity() {
 
         inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val messageText: TextView = itemView.findViewById(R.id.textViewMessageSent)
-            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimestampSent)
+            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimeSent)
 
             fun bind(message: Message) {
                 messageText.text = message.text
@@ -171,7 +158,7 @@ class PlantaGPT : AppCompatActivity() {
 
         inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             private val messageText: TextView = itemView.findViewById(R.id.textViewMessageReceived)
-            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimestampReceived)
+            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimeReceived)
 
             fun bind(message: Message) {
                 messageText.text = message.text
