@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@android:color/white"
+    android:background="@drawable/gradient_background"
     tools:context=".TemperaturaActivity">
 
     <TextView
@@ -19,8 +19,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/imageViewIconTemperatura"
-        app:layout_constraintVertical_chainStyle="packed"/>
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintBottom_toTopOf="@id/imageViewIconTemperatura"/>
 
     <ImageView
         android:id="@+id/imageViewIconTemperatura"
@@ -31,95 +31,92 @@
         app:layout_constraintTop_toBottomOf="@id/textViewTitleTemperatura"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/chartTemperatura"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintBottom_toTopOf="@id/chartTemperatura"/>
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chartTemperatura"
         android:layout_width="0dp"
-        android:layout_height="250dp"
-        android:layout_marginTop="16dp"
+        android:layout_height="300dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/rounded_corners_background"
+        android:padding="8dp"
         app:layout_constraintTop_toBottomOf="@id/imageViewIconTemperatura"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewMaxTemperaturaLabel"/>
+        app:layout_constraintBottom_toTopOf="@id/linearLayoutStats"/>
 
-    <TextView
-        android:id="@+id/textViewMaxTemperaturaLabel"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/linearLayoutStats"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Temp. Max:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
+        android:layout_marginTop="24dp"
+        android:padding="16dp"
+        android:background="@drawable/rounded_corners_background"
         app:layout_constraintTop_toBottomOf="@id/chartTemperatura"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewMinTemperaturaLabel"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <TextView
-        android:id="@+id/textViewMaxTemperaturaValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMaxTemperaturaLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMaxTemperaturaLabel"
-        android:layout_marginStart="8dp"/>
+        <TextView
+            android:id="@+id/textViewMaxTemperaturaLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Temp. Máx:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
 
-    <TextView
-        android:id="@+id/textViewMinTemperaturaLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Temp. Min:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMaxTemperaturaLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewPrediccionTemperaturaLabel"
-        android:layout_marginTop="8dp"/>
+        <TextView
+            android:id="@+id/textViewMaxTemperaturaValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:id="@+id/textViewMinTemperaturaValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMinTemperaturaLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMinTemperaturaLabel"
-        android:layout_marginStart="8dp"/>
+        <TextView
+            android:id="@+id/textViewMinTemperaturaLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Temp. Mín:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
 
-    <TextView
-        android:id="@+id/textViewPrediccionTemperaturaLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Predicción Temp:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMinTemperaturaLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/imageButtonBackTemperatura"/>
+        <TextView
+            android:id="@+id/textViewMinTemperaturaValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:id="@+id/textViewPrediccionTemperaturaValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewPrediccionTemperaturaLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewPrediccionTemperaturaLabel"
-        android:layout_marginStart="8dp"/>
+        <TextView
+            android:id="@+id/textViewPrediccionTemperaturaLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Predicción Temp:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:id="@+id/textViewPrediccionTemperaturaValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/imageButtonBackTemperatura"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_back_arrow" 
+        android:src="@drawable/ic_back_arrow"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Botón de regreso"
         app:layout_constraintBottom_toBottomOf="parent"

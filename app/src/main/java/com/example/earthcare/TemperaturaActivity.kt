@@ -137,42 +137,39 @@ class TemperaturaActivity : AppCompatActivity() {
         chart.description.isEnabled = false
         chart.setTouchEnabled(true)
         chart.setPinchZoom(true)
-        chart.setDrawGridBackground(true)
-        chart.setBackgroundColor(Color.WHITE)
+        chart.setDrawGridBackground(false)
+        chart.setBackgroundColor(Color.TRANSPARENT)
 
         // Configurar eje X
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
-        xAxis.setDrawGridLines(true)
-        xAxis.gridColor = Color.LTGRAY
-        xAxis.gridLineWidth = 0.5f
-        xAxis.setDrawAxisLine(true)
-        xAxis.textColor = Color.DKGRAY
+        xAxis.setDrawGridLines(false)
+        xAxis.setDrawAxisLine(false)
+        xAxis.textColor = Color.parseColor("#FFFFFF")
         xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
         xAxis.granularity = 1f
+        xAxis.setDrawLabels(false)
 
         // Configurar eje Y izquierdo
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.DKGRAY
+        leftAxis.textColor = Color.parseColor("#FFFFFF")
         leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
-        leftAxis.gridColor = Color.LTGRAY
+        leftAxis.gridColor = Color.parseColor("#CCCCCC")
         leftAxis.gridLineWidth = 0.5f
-        leftAxis.setDrawAxisLine(true)
+        leftAxis.setDrawAxisLine(false)
         leftAxis.axisMinimum = 0f
         leftAxis.axisMaximum = 40f
-        leftAxis.setDrawZeroLine(true)
-        leftAxis.zeroLineColor = Color.GRAY
-        leftAxis.zeroLineWidth = 1f
+        leftAxis.setDrawZeroLine(false)
 
         // Configurar eje Y derecho
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
         // Configurar leyenda
-        chart.legend.textColor = Color.DKGRAY
+        chart.legend.textColor = Color.parseColor("#FFFFFF")
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
@@ -181,7 +178,7 @@ class TemperaturaActivity : AppCompatActivity() {
 
         // Configurar marcador
         chart.setDrawMarkers(true)
-        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, "°C")
+        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, "°C", emptyList())
 
         // Animación
         chart.animateX(1500, Easing.EaseInOutQuart)
@@ -195,19 +192,21 @@ class TemperaturaActivity : AppCompatActivity() {
         if (idealTempMin > 0 && idealTempMax > idealTempMin) {
             // Línea de temperatura mínima ideal
             val minLimitLine = LimitLine(idealTempMin, "Mín: ${idealTempMin.roundToInt()}°C")
-            minLimitLine.lineWidth = 1.5f
-            minLimitLine.lineColor = Color.rgb(76, 175, 80)
-            minLimitLine.textColor = Color.rgb(76, 175, 80)
+            minLimitLine.lineWidth = 2f
+            minLimitLine.lineColor = Color.parseColor("#FF5722")
+            minLimitLine.textColor = Color.parseColor("#FF5722")
             minLimitLine.textSize = 10f
             minLimitLine.enableDashedLine(10f, 10f, 0f)
+            minLimitLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
 
             // Línea de temperatura máxima ideal
             val maxLimitLine = LimitLine(idealTempMax, "Máx: ${idealTempMax.roundToInt()}°C")
-            maxLimitLine.lineWidth = 1.5f
-            maxLimitLine.lineColor = Color.rgb(76, 175, 80)
-            maxLimitLine.textColor = Color.rgb(76, 175, 80)
+            maxLimitLine.lineWidth = 2f
+            maxLimitLine.lineColor = Color.parseColor("#FF5722")
+            maxLimitLine.textColor = Color.parseColor("#FF5722")
             maxLimitLine.textSize = 10f
             maxLimitLine.enableDashedLine(10f, 10f, 0f)
+            maxLimitLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_BOTTOM
 
             leftAxis.addLimitLine(minLimitLine)
             leftAxis.addLimitLine(maxLimitLine)
@@ -313,23 +312,11 @@ class TemperaturaActivity : AppCompatActivity() {
         lineData.setValueTextSize(9f)
         chartTemperatura.data = lineData
 
+        // Actualizar el marcador con los timestamps
+        chartTemperatura.marker = CustomMarkerView(this, R.layout.custom_marker_view, "°C", timestamps)
+
         val xAxis = chartTemperatura.xAxis
-        val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
-        xAxis.valueFormatter = object : IndexAxisValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                val index = value.toInt()
-                return if (index >= 0 && index < timestamps.size) {
-                    try {
-                        val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(timestamps[index])
-                        date?.let { timeFormatter.format(it) } ?: timestamps[index]
-                    } catch (e: Exception) {
-                        timestamps[index]
-                    }
-                } else {
-                    ""
-                }
-            }
-        }
+        xAxis.valueFormatter = null
 
         chartTemperatura.invalidate()
     }

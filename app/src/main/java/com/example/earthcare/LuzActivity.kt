@@ -143,42 +143,39 @@ class LuzActivity : AppCompatActivity() {
         chart.description.isEnabled = false
         chart.setTouchEnabled(true)
         chart.setPinchZoom(true)
-        chart.setDrawGridBackground(true)
-        chart.setBackgroundColor(Color.WHITE)
+        chart.setDrawGridBackground(false)
+        chart.setBackgroundColor(Color.TRANSPARENT)
 
         // Configure X axis
         val xAxis = chart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
-        xAxis.setDrawGridLines(true)
-        xAxis.gridColor = Color.LTGRAY
-        xAxis.gridLineWidth = 0.5f
-        xAxis.setDrawAxisLine(true)
-        xAxis.textColor = Color.DKGRAY
+        xAxis.setDrawGridLines(false)
+        xAxis.setDrawAxisLine(false)
+        xAxis.textColor = Color.parseColor("#FFFFFF")
         xAxis.textSize = 10f
         xAxis.setAvoidFirstLastClipping(true)
         xAxis.labelRotationAngle = -45f
         xAxis.granularity = 1f
+        xAxis.setDrawLabels(false)
 
         // Configure left Y axis
         val leftAxis = chart.axisLeft
-        leftAxis.textColor = Color.DKGRAY
+        leftAxis.textColor = Color.parseColor("#FFFFFF")
         leftAxis.textSize = 10f
         leftAxis.setDrawGridLines(true)
-        leftAxis.gridColor = Color.LTGRAY
+        leftAxis.gridColor = Color.parseColor("#CCCCCC")
         leftAxis.gridLineWidth = 0.5f
-        leftAxis.setDrawAxisLine(true)
+        leftAxis.setDrawAxisLine(false)
         leftAxis.axisMinimum = 0f
         leftAxis.axisMaximum = 20000f
-        leftAxis.setDrawZeroLine(true)
-        leftAxis.zeroLineColor = Color.GRAY
-        leftAxis.zeroLineWidth = 1f
+        leftAxis.setDrawZeroLine(false)
 
         // Disable right Y axis
         val rightAxis = chart.axisRight
         rightAxis.isEnabled = false
 
         // Configure legend
-        chart.legend.textColor = Color.DKGRAY
+        chart.legend.textColor = Color.parseColor("#FFFFFF")
         chart.legend.textSize = 12f
         chart.legend.isEnabled = true
         chart.legend.formSize = 12f
@@ -187,7 +184,7 @@ class LuzActivity : AppCompatActivity() {
 
         // Configure marker
         chart.setDrawMarkers(true)
-        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, " lux")
+        chart.marker = CustomMarkerView(this, R.layout.custom_marker_view, " lux", emptyList())
 
         // Animation
         chart.animateX(1500, Easing.EaseInOutQuart)
@@ -201,19 +198,21 @@ class LuzActivity : AppCompatActivity() {
         if (idealLuzMin >= 0 && idealLuzMax > idealLuzMin) {
             // Minimum ideal light line
             val minLimitLine = LimitLine(idealLuzMin, "Mín: ${idealLuzMin.roundToInt()} lux")
-            minLimitLine.lineWidth = 1.5f
-            minLimitLine.lineColor = Color.rgb(255, 193, 7) // Amber
-            minLimitLine.textColor = Color.rgb(255, 193, 7)
+            minLimitLine.lineWidth = 2f
+            minLimitLine.lineColor = Color.parseColor("#FFD700")
+            minLimitLine.textColor = Color.parseColor("#FFD700")
             minLimitLine.textSize = 10f
             minLimitLine.enableDashedLine(10f, 10f, 0f)
+            minLimitLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
 
             // Maximum ideal light line
             val maxLimitLine = LimitLine(idealLuzMax, "Máx: ${idealLuzMax.roundToInt()} lux")
-            maxLimitLine.lineWidth = 1.5f
-            maxLimitLine.lineColor = Color.rgb(255, 193, 7)
-            maxLimitLine.textColor = Color.rgb(255, 193, 7)
+            maxLimitLine.lineWidth = 2f
+            maxLimitLine.lineColor = Color.parseColor("#FFD700")
+            maxLimitLine.textColor = Color.parseColor("#FFD700")
             maxLimitLine.textSize = 10f
             maxLimitLine.enableDashedLine(10f, 10f, 0f)
+            maxLimitLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_BOTTOM
 
             leftAxis.addLimitLine(minLimitLine)
             leftAxis.addLimitLine(maxLimitLine)
@@ -319,23 +318,11 @@ class LuzActivity : AppCompatActivity() {
         lineData.setValueTextSize(9f)
         chartLuz.data = lineData
 
+        // Actualizar el marcador con los timestamps
+        chartLuz.marker = CustomMarkerView(this, R.layout.custom_marker_view, " lux", timestamps)
+
         val xAxis = chartLuz.xAxis
-        val timeFormatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
-        xAxis.valueFormatter = object : IndexAxisValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                val index = value.toInt()
-                return if (index >= 0 && index < timestamps.size) {
-                    try {
-                        val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(timestamps[index])
-                        date?.let { timeFormatter.format(it) } ?: timestamps[index]
-                    } catch (e: Exception) {
-                        timestamps[index]
-                    }
-                } else {
-                    ""
-                }
-            }
-        }
+        xAxis.valueFormatter = null
 
         chartLuz.invalidate()
     }

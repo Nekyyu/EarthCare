@@ -274,6 +274,8 @@ class PantallaPrincipal : AppCompatActivity() {
                         else -> R.drawable.ic_planta
                     }
                 )
+                // Actualizar el nombre de la planta
+                findViewById<TextView>(R.id.tvPlantName).text = plant.name
             }
         }
     }
@@ -508,14 +510,22 @@ class PantallaPrincipal : AppCompatActivity() {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.HOUR, -24) // Últimas 24 horas
 
+            // Asegurar que los rangos sean válidos
+            val lightMin = minOf(plant.idealLightMin, plant.idealLightMax)
+            val lightMax = maxOf(plant.idealLightMin, plant.idealLightMax)
+            val tempMin = minOf(plant.idealTempMin, plant.idealTempMax)
+            val tempMax = maxOf(plant.idealTempMin, plant.idealTempMax)
+            val humidityMin = minOf(plant.idealHumidityMin, plant.idealHumidityMax)
+            val humidityMax = maxOf(plant.idealHumidityMin, plant.idealHumidityMax)
+
             for (i in 0..23) {
                 calendar.add(Calendar.HOUR, 1)
 
                 val fakeData = hashMapOf<String, Any>(
                     "Hora" to SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time),
-                    "luz" to (plant.idealLightMin..plant.idealLightMax).random(),
-                    "temperatura_ext" to (plant.idealTempMin..plant.idealTempMax).random(),
-                    "humdedad_ext" to (plant.idealHumidityMin..plant.idealHumidityMax).random(),
+                    "luz" to (lightMin..lightMax).random(),
+                    "temperatura_ext" to (tempMin..tempMax).random(),
+                    "humdedad_ext" to (humidityMin..humidityMax).random(),
                     "timestamp" to calendar.timeInMillis
                 )
 
