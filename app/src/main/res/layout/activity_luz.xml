@@ -26,7 +26,7 @@
         android:id="@+id/imageViewIconLuz"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:src="@drawable/ic_luz" 
+        android:src="@drawable/ic_luz"
         android:contentDescription="Icono de luz"
         app:layout_constraintTop_toBottomOf="@id/textViewTitleLuz"
         app:layout_constraintStart_toStartOf="parent"
@@ -118,11 +118,11 @@
         android:id="@+id/imageButtonBackLuz"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_back_arrow" 
+        android:src="@drawable/ic_back_arrow"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Botón de regreso"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginBottom="16dp"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout> 
+</androidx.constraintlayout.widget.ConstraintLayout>
