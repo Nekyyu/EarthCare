@@ -103,54 +103,27 @@ class HumedadActivity : AppCompatActivity() {
         userRef.child("plants").child(currentPlantId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Obtener valores con manejo robusto de diferentes tipos y valores por defecto
-                idealHumMin = when {
-                    snapshot.hasChild("idealHumidityMin") -> when (val hum = snapshot.child("idealHumidityMin").value) {
-                        is Long -> hum.toFloat()
-                        is Double -> hum.toFloat()
-                        is Int -> hum.toFloat()
-                        is Float -> hum
-                        else -> 40f
-                    }
-                    snapshot.hasChild("idealHumidity") -> {
-                        val hum = when (val humValue = snapshot.child("idealHumidity").value) {
-                            is Long -> humValue.toFloat()
-                            is Double -> humValue.toFloat()
-                            is Int -> humValue.toFloat()
-                            is Float -> humValue
-                            else -> 40f
-                        }
-                        // Ajuste especial para valores bajos de humedad
-                        when {
-                            hum < 20f -> max(0f, hum - 5f) // Rango más pequeño para valores bajos
-                            else -> hum - 15f // Rango normal para otros valores
-                        }
-                    }
-                    else -> 40f
+                idealHumMin = when (val hum = snapshot.child("idealHumidityMin").value) {
+                    is Long -> hum.toFloat()
+                    is Double -> hum.toFloat()
+                    is Int -> hum.toFloat()
+                    is Float -> hum
+                    else -> 40f // Valor por defecto si no se encuentra o no es válido
                 }
 
-                idealHumMax = when {
-                    snapshot.hasChild("idealHumidityMax") -> when (val hum = snapshot.child("idealHumidityMax").value) {
-                        is Long -> hum.toFloat()
-                        is Double -> hum.toFloat()
-                        is Int -> hum.toFloat()
-                        is Float -> hum
-                        else -> 70f
-                    }
-                    snapshot.hasChild("idealHumidity") -> {
-                        val hum = when (val humValue = snapshot.child("idealHumidity").value) {
-                            is Long -> humValue.toFloat()
-                            is Double -> humValue.toFloat()
-                            is Int -> humValue.toFloat()
-                            is Float -> humValue
-                            else -> 70f
-                        }
-                        // Ajuste especial para valores bajos de humedad
-                        when {
-                            hum < 20f -> hum + 5f // Rango más pequeño para valores bajos
-                            else -> hum + 15f // Rango normal para otros valores
-                        }
-                    }
-                    else -> 70f
+                idealHumMax = when (val hum = snapshot.child("idealHumidityMax").value) {
+                    is Long -> hum.toFloat()
+                    is Double -> hum.toFloat()
+                    is Int -> hum.toFloat()
+                    is Float -> hum
+                    else -> 70f // Valor por defecto si no se encuentra o no es válido
+                }
+
+                // Asegurarse de que el mínimo no sea mayor que el máximo
+                if (idealHumMin > idealHumMax) {
+                    val temp = idealHumMin
+                    idealHumMin = idealHumMax
+                    idealHumMax = temp
                 }
 
                 // Asegurarse de que los valores estén dentro de límites razonables
