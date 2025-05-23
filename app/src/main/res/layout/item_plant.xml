@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="16dp"
-    android:background="?attr/selectableItemBackground">
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical">
 
     <ImageView
         android:id="@+id/ivPlant"
@@ -13,10 +14,11 @@
         android:src="@drawable/ic_planta"/>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginStart="16dp">
+        android:layout_marginStart="16dp"
+        android:layout_weight="1">
 
         <TextView
             android:id="@+id/tvPlantName"
@@ -32,4 +34,22 @@
             android:textSize="12sp"
             android:textColor="@color/hint_color"/>
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnEditPlant"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_edit"
+        android:contentDescription="Editar planta"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"/>
+
+    <ImageButton
+        android:id="@+id/btnDeletePlant"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_delete"
+        android:contentDescription="Eliminar planta"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"/>
 </LinearLayout>

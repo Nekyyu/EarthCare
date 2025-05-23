@@ -8,5 +8,6 @@ data class SensorData(
     val humedad_suelo: Float? = null,
     val luz: Float? = null,
     val porcentaje_humedad_suelo: Float? = null,
-    val temperatura_ext: Float? = null
+    val temperatura_ext: Float? = null,
+    val timestamp: Long? = null
 ) 

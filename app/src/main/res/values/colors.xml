@@ -26,6 +26,12 @@
     <color name="coolTemp">#FF2196F3</color>
     <color name="normalTemp">#FF4CAF50</color>
     <color name="hotTemp">#FFF44336</color>
+    <color name="redAlert">#FF5252</color>
+    <color name="yellowAlert">#FFD740</color>
+    <color name="orangeAlert">#FFAB40</color>
+    <color name="blueAlert">#40C4FF</color>
+    <color name="lightBlue">#80D8FF</color>
+    <color name="darkBlue">#0091EA</color>
     <!-- Colores de fondo -->
     <color name="light_grey_background">#FAFAFA</color>
 

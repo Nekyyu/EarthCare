@@ -1,11 +1,8 @@
 package com.example.earthcare
 
-
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.earthcare.R
@@ -15,18 +12,26 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageButton
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class PlantaGPT : AppCompatActivity() {
 
     private lateinit var userInput: EditText
-    private lateinit var sendButton: Button
-    private lateinit var responseText: TextView
-    private lateinit var buttonBackToMain: ImageView
+    private lateinit var sendButton: ImageButton
+    private lateinit var recyclerViewMessages: RecyclerView
+    private lateinit var buttonBack: ImageButton
 
     private val client = OkHttpClient()
-
-    private val endpoint = "https://josep-max5lkqq-eastus2.cognitiveservices.azure.com/openai/deployments/EarthCareAI/chat/completions?api-version=2025-01-01-preview"
-    private val apiKey = "D1sMgjonuufAn8WQHaEFD4peIQjAJ9JvTSbo4r7HvdwYtnRAPFGZJQQJ99BEACHYHv6XJ3w3AAAAACOGwjPH" // 🔒 Reemplázala desde configuración segura
+    private val messages = mutableListOf<Message>()
+    private lateinit var messageAdapter: MessageAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,36 +39,48 @@ class PlantaGPT : AppCompatActivity() {
 
         userInput = findViewById(R.id.userInput)
         sendButton = findViewById(R.id.sendButton)
-        responseText = findViewById(R.id.responseText)
-        buttonBackToMain = findViewById(R.id.buttonBackToMain)
+        recyclerViewMessages = findViewById(R.id.recyclerViewMessages)
+        buttonBack = findViewById(R.id.buttonBack)
 
+        messageAdapter = MessageAdapter(messages)
+        recyclerViewMessages.layoutManager = LinearLayoutManager(this)
+        recyclerViewMessages.adapter = messageAdapter
 
         sendButton.setOnClickListener {
-            val prompt = userInput.text.toString()
-            sendMessageToAzure(prompt)
+            val prompt = userInput.text.toString().trim()
+            if (prompt.isNotEmpty()) {
+                addMessage(Message(prompt, Sender.USER))
+                userInput.text.clear()
+                sendMessageToAzure(prompt)
+            }
         }
-        buttonBackToMain.setOnClickListener {
-            startActivity(Intent(this, LuzActivity::class.java))
+
+        buttonBack.setOnClickListener { onBackPressed() }
+    }
+
+    private fun addMessage(message: Message) {
+        runOnUiThread {
+            messages.add(message)
+            messageAdapter.notifyItemInserted(messages.size - 1)
+            recyclerViewMessages.scrollToPosition(messages.size - 1)
         }
     }
 
     private fun sendMessageToAzure(prompt: String) {
-        // Mensaje de contexto ("system") como en el Playground
         val systemMessage = JSONObject()
         systemMessage.put("role", "system")
         systemMessage.put("content", "Eres un experto en cuidado de plantas. Responde de manera clara y breve.")
 
-        // Mensaje del usuario
-        val userMessage = JSONObject()
-        userMessage.put("role", "user")
-        userMessage.put("content", prompt)
-
-        // Crear array con ambos mensajes
         val messagesArray = JSONArray()
         messagesArray.put(systemMessage)
-        messagesArray.put(userMessage)
 
-        // Crear el objeto final JSON
+        messages.forEach { message ->
+             val msgObj = JSONObject()
+             msgObj.put("role", if (message.sender == Sender.USER) "user" else "assistant")
+             msgObj.put("content", message.text)
+             messagesArray.put(msgObj)
+        }
+
         val json = JSONObject()
         json.put("messages", messagesArray)
         json.put("temperature", 0.7)
@@ -72,22 +89,20 @@ class PlantaGPT : AppCompatActivity() {
         val requestBody = json.toString().toRequestBody(mediaType)
 
         val request = Request.Builder()
-            .url(endpoint)
+            .url(Config.AZURE_OPENAI_ENDPOINT)
             .post(requestBody)
-            .addHeader("api-key", apiKey)
+            .addHeader("api-key", Config.AZURE_OPENAI_API_KEY)
             .addHeader("Content-Type", "application/json")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    responseText.text = "Error: ${e.message}"
-                }
+                addMessage(Message("Error: ${e.message}", Sender.BOT))
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string()
-                val message = try {
+                val botMessageText = try {
                     val jsonObj = JSONObject(body ?: "{}")
                     val choices = jsonObj.getJSONArray("choices")
                     val messageObj = choices.getJSONObject(0).getJSONObject("message")
@@ -95,12 +110,61 @@ class PlantaGPT : AppCompatActivity() {
                 } catch (e: Exception) {
                     "Error al interpretar respuesta."
                 }
-
-                runOnUiThread {
-                    responseText.text = message
-                }
+                addMessage(Message(botMessageText, Sender.BOT))
             }
         })
     }
 
+    inner class MessageAdapter(private val messages: List<Message>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+        private val VIEW_TYPE_SENT = 1
+        private val VIEW_TYPE_RECEIVED = 2
+
+        override fun getItemViewType(position: Int): Int {
+            return if (messages[position].sender == Sender.USER) VIEW_TYPE_SENT else VIEW_TYPE_RECEIVED
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+            return if (viewType == VIEW_TYPE_SENT) {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_message_sent, parent, false)
+                SentMessageViewHolder(view)
+            } else {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_message_received, parent, false)
+                ReceivedMessageViewHolder(view)
+            }
+        }
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val message = messages[position]
+            if (holder.itemViewType == VIEW_TYPE_SENT) {
+                (holder as SentMessageViewHolder).bind(message)
+            } else {
+                (holder as ReceivedMessageViewHolder).bind(message)
+            }
+        }
+
+        override fun getItemCount() = messages.size
+
+        inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val messageText: TextView = itemView.findViewById(R.id.textViewMessageSent)
+            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimeSent)
+
+            fun bind(message: Message) {
+                messageText.text = message.text
+                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                timestampText.text = timeFormat.format(Date(message.timestamp))
+            }
+        }
+
+        inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val messageText: TextView = itemView.findViewById(R.id.textViewMessageReceived)
+            private val timestampText: TextView = itemView.findViewById(R.id.textViewTimeReceived)
+
+            fun bind(message: Message) {
+                messageText.text = message.text
+                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                timestampText.text = timeFormat.format(Date(message.timestamp))
+            }
+        }
+    }
 }

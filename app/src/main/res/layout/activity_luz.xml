@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@android:color/white"
+    android:background="@color/white"
     tools:context=".LuzActivity">
 
     <TextView
@@ -19,8 +19,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/imageViewIconLuz"
-        app:layout_constraintVertical_chainStyle="packed"/>
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintBottom_toTopOf="@id/imageViewIconLuz"/>
 
     <ImageView
         android:id="@+id/imageViewIconLuz"
@@ -28,7 +28,7 @@
         android:layout_height="48dp"
         android:src="@drawable/ic_luz" 
         android:contentDescription="Icono de luz"
-        app:layout_constraintTop_toBottomOf="@id/textViewTitleLuz"
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitleLuz"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/chartLuz"/>
@@ -38,91 +38,101 @@
         android:layout_width="0dp"
         android:layout_height="250dp"
         android:layout_marginTop="16dp"
+        android:background="@drawable/rounded_corners_background"
+        android:padding="8dp"
         app:layout_constraintTop_toBottomOf="@id/imageViewIconLuz"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewMaxLuzLabel"/>
+        app:layout_constraintBottom_toTopOf="@id/linearLayoutStatsLuz"/>
 
-    <TextView
-        android:id="@+id/textViewMaxLuzLabel"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/linearLayoutStatsLuz"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Luz Max:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
+        android:layout_marginTop="24dp"
+        android:padding="16dp"
+        android:background="@color/white"
         app:layout_constraintTop_toBottomOf="@id/chartLuz"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewMinLuzLabel"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <TextView
-        android:id="@+id/textViewMaxLuzValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMaxLuzLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMaxLuzLabel"
-        android:layout_marginStart="8dp"/>
+        <TextView
+            android:id="@+id/textViewMaxLuzLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Luz Max:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
 
-    <TextView
-        android:id="@+id/textViewMinLuzLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Luz Min:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMaxLuzLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/textViewPrediccionLuzLabel"
-        android:layout_marginTop="8dp"/>
+        <TextView
+            android:id="@+id/textViewMaxLuzValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:id="@+id/textViewMinLuzValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewMinLuzLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewMinLuzLabel"
-        android:layout_marginStart="8dp"/>
+        <TextView
+            android:id="@+id/textViewMinLuzLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Luz Min:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
 
-    <TextView
-        android:id="@+id/textViewPrediccionLuzLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Predicción Luz:"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/textViewMinLuzLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/imageButtonBackLuz"/>
+        <TextView
+            android:id="@+id/textViewMinLuzValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:id="@+id/textViewPrediccionLuzValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="@id/textViewPrediccionLuzLabel"
-        app:layout_constraintStart_toEndOf="@id/textViewPrediccionLuzLabel"
-        android:layout_marginStart="8dp"/>
+         <TextView
+            android:id="@+id/textViewPrediccionLuzLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Predicción Luz:"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:id="@+id/textViewPrediccionLuzValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/textViewUltimoDatoLuzConFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Último dato: -- (fecha)"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/imageButtonBackLuz"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_back_arrow" 
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_back_arrow"
+        app:tint="@color/black"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Botón de regreso"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

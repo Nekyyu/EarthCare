@@ -7,24 +7,41 @@
     android:padding="16dp"
     android:background="@drawable/gradient_background">
 
-    <!-- Fondo decorativo -->
+    <!-- Nombre de la planta -->
 
     <!-- Planta central -->
+
+    <!-- Contenedor Luz -->
+    <TextView
+        android:id="@+id/tvPlantName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="160dp"
+        android:text="Nombre Planta"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageView
         android:id="@+id/ivPlant"
         android:layout_width="300dp"
         android:layout_height="250dp"
-        android:src="@drawable/ic_planta"
-        android:contentDescription="Icono de la planta"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="32dp"
         android:layout_marginBottom="32dp"
-        android:scaleType="centerInside"/>
+        android:contentDescription="Icono de la planta"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_planta"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.493"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.418" />
 
-    <!-- Contenedor Luz -->
     <LinearLayout
         android:id="@+id/lightContainer"
         android:layout_width="100dp"
@@ -58,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Luz"
-            android:textSize="16sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="@color/white" />
     </LinearLayout>
@@ -97,31 +114,33 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Temperatura"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Contenedor Humedad -->
+
+    <!-- Grupo de botones flotantes en la esquina inferior derecha -->
     <LinearLayout
         android:id="@+id/humidityContainer"
         android:layout_width="100dp"
         android:layout_height="120dp"
-        android:orientation="vertical"
-        android:gravity="center"
+        android:layout_marginBottom="112dp"
         android:background="@drawable/rounded_sensor_bg"
         android:elevation="4dp"
+        android:gravity="center"
+        android:orientation="vertical"
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="48dp">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:id="@+id/imageViewIconHumedad"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:src="@drawable/ic_humedad"
-            android:contentDescription="Icono de humedad"/>
+            android:contentDescription="Icono de humedad"
+            android:src="@drawable/ic_humedad" />
 
         <TextView
             android:id="@+id/textViewUltimoDatoHumedad"
@@ -130,40 +149,87 @@
             android:text="-- %"
             android:textColor="@color/white"
             android:textSize="14sp"
-            android:textStyle="bold"/>
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Humedad"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Botones -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+
+        <!-- Botón de cambio de planta -->
+    </LinearLayout>
+
+    <!-- Botón de PlantaGPT -->
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/PlantaGPT"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="32dp"
+        android:contentDescription="Abrir PlantaGPT"
+        android:elevation="8dp"
+        android:src="@drawable/ic_chatbot"
+        app:backgroundTint="@color/primaryColor"
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabChangePlant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_change_plant"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="8dp"
         android:contentDescription="Cambiar planta"
+        android:elevation="8dp"
+        android:src="@drawable/ic_change_plant"
         app:backgroundTint="@color/primaryColor"
-        app:tint="@color/white"
-        android:elevation="8dp"
-        app:borderWidth="0dp"/>
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="@+id/PlantaGPT"
+        app:layout_constraintEnd_toStartOf="@+id/PlantaGPT"
+        app:layout_constraintTop_toTopOf="@+id/PlantaGPT"
+        app:tint="@color/white" />
 
-    <ImageButton
-        android:id="@+id/PlantaGPT"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:contentDescription="Abrir PlantaGPT"
-        android:src="@drawable/ic_chatbot"
-        android:background="@drawable/circle_primary_bg"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNotifications"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Notificaciones"
         android:elevation="8dp"
-        app:layout_constraintEnd_toStartOf="@id/fabChangePlant"
-        app:layout_constraintBottom_toBottomOf="@id/fabChangePlant"/>
+        android:src="@drawable/ic_notificacion_boton"
+        app:backgroundTint="@color/primaryColor"
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/fabChangePlant"
+        app:tint="@color/white" />
+
+    <TextView
+        android:id="@+id/notificationBadge"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:background="@drawable/badge_background"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/fabNotifications"
+        app:layout_constraintEnd_toEndOf="@id/fabNotifications"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
