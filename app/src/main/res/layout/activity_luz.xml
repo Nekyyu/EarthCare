@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="Luz"
         android:textColor="@android:color/black"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -24,9 +24,10 @@
 
     <ImageView
         android:id="@+id/imageViewIconLuz"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_luz" 
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:src="@drawable/ic_luz"
+        android:layout_marginTop="18dp"
         android:contentDescription="Icono de luz"
         app:layout_constraintTop_toBottomOf="@+id/textViewTitleLuz"
         app:layout_constraintStart_toStartOf="parent"
@@ -36,7 +37,7 @@
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chartLuz"
         android:layout_width="0dp"
-        android:layout_height="250dp"
+        android:layout_height="300dp"
         android:layout_marginTop="16dp"
         android:background="@drawable/rounded_corners_background"
         android:padding="8dp"

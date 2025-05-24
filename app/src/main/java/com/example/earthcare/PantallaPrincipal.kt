@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.app.Dialog
 import android.content.Intent
+import android.media.Image
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -113,6 +114,7 @@ class PantallaPrincipal : AppCompatActivity() {
         findViewById<FloatingActionButton>(R.id.fabNotifications).setOnClickListener {
             showAlertsDialog()
         }
+
     }
 
     private fun setupAnimations() {
@@ -279,6 +281,7 @@ class PantallaPrincipal : AppCompatActivity() {
     }
 
     private fun showPlantSelectionDialog() {
+
         val dialogBinding = DialogSelectPlantBinding.inflate(layoutInflater)
         val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogBinding.root)
@@ -321,6 +324,42 @@ class PantallaPrincipal : AppCompatActivity() {
 
     private fun showPlantQuestionnaire() {
         val dialogBinding = DialogPlantQuestionnaireBinding.inflate(layoutInflater)
+        dialogBinding.informationLight.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Recomendación de Luz ( 1 Lux = 1 lumen/m² )")
+                .setMessage("Vegetales              20,000 - 50,000\n" +
+                            "Frutales               30,000 - 60,000\n" +
+                            "Hierbas                15,000 - 40,000\n" +
+                            "Flores                 20,000 - 60,000\n" +
+                            "Arboles                25,000 - 70,000\n" +
+                            "Cactus y Suculentas    30,000 - 100,000")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+        dialogBinding.informationTemperature.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Recomendación de Temperatura (Grados Centigrados)")
+                .setMessage("Vegetales              18 – 27\n" +
+                            "Frutales               20 – 30\n" +
+                            "Hierbas                18 – 25\n" +
+                            "Flores                 16 – 26\n" +
+                            "Árboles                15 – 30\n" +
+                            "Cactus y Suculentas    20 – 35")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+        dialogBinding.informationHumidity.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Recomendación de Humedad (%)")
+                .setMessage("Vegetales              60 – 80\n" +
+                        "Frutales               50 – 70\n" +
+                        "Hierbas                50 – 70\n" +
+                        "Flores                 50 – 70\n" +
+                        "Árboles                40 – 70\n" +
+                        "Cactus y Suculentas    10 – 40")
+                .setPositiveButton("OK", null)
+                .show()
+        }
         val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogBinding.root)
             .setTitle("Agregar Nueva Planta")
@@ -670,6 +709,7 @@ class PantallaPrincipal : AppCompatActivity() {
                 .show()
             return
         }
+
 
         val dialogBinding = DialogAlertsBinding.inflate(layoutInflater)
         val dialog = MaterialAlertDialogBuilder(this)

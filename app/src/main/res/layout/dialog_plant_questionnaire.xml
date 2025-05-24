@@ -56,6 +56,14 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/informationLight"
+                android:layout_marginTop="12dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:src="@drawable/ic_information"
+                />
             <EditText
                 android:id="@+id/etLightMin"
                 android:layout_width="0dp"
@@ -90,6 +98,13 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
+            <ImageView
+                android:id="@+id/informationTemperature"
+                android:layout_marginTop="12dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:src="@drawable/ic_information"
+                />
             <EditText
                 android:id="@+id/etTemperatureMin"
                 android:layout_width="0dp"
@@ -124,6 +139,13 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
+            <ImageView
+                android:id="@+id/informationHumidity"
+                android:layout_marginTop="12dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:src="@drawable/ic_information"
+                />
             <EditText
                 android:id="@+id/etHumidityMin"
                 android:layout_width="0dp"
