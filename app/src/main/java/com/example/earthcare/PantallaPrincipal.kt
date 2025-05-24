@@ -912,7 +912,7 @@ class PantallaPrincipal : AppCompatActivity() {
             val plant = plants[position]
             holder.image.setImageResource(
                 when (plant.imageRes) {
-                    "tomato" -> R.drawable.ic_tomato
+                    "tomato" -> R.drawable.vaporub
                     "lettuce" -> R.drawable.ic_lettuce
                     "pepper" -> R.drawable.ic_pepper
                     else -> R.drawable.ic_planta
